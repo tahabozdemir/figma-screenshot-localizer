@@ -2,7 +2,7 @@
   "name": "figma-screenshot-localizer",
   "version": "1.0.0",
   "private": true,
-  "description": "Figma plugin that duplicates your App Store / Google Play screenshot frames and translates the text into 21 languages \u2014 locally, with your own API key or by hand.",
+  "description": "Figma plugin that duplicates your App Store / Google Play screenshot frames and translates the text into 21 languages — locally, with your own API key or by hand.",
   "license": "MIT",
   "author": "Taha Bozdemir",
   "keywords": [
@@ -31,7 +31,7 @@
   },
   "devDependencies": {
     "@figma/plugin-typings": "^1.100.2",
-    "esbuild": "^0.24.0",
+    "esbuild": "^0.28.2",
     "typescript": "^5.6.3"
   }
 }
