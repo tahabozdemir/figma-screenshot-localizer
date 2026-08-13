@@ -67,8 +67,10 @@ function percent(ratio: number): string {
 
 function overflowText(d: Extract<WarningDetail, { code: 'overflow' }>): string {
   const parts: string[] = [];
-  if (d.overflowH > 0.75) parts.push('exceeded the available height by ' + Math.ceil(d.overflowH) + 'px');
-  if (d.overflowW > 0.75) parts.push('exceeded the available width by ' + Math.ceil(d.overflowW) + 'px');
+  if (d.overflowH > 0.75)
+    parts.push('exceeded the available height by ' + Math.ceil(d.overflowH) + 'px');
+  if (d.overflowW > 0.75)
+    parts.push('exceeded the available width by ' + Math.ceil(d.overflowW) + 'px');
   const detail = parts.length ? parts.join(' and ') : 'does not fit its container';
   const lengthNote =
     d.growth > 0.05 ? ' Translation is ' + percent(d.growth) + ' longer than the source.' : '';
@@ -162,9 +164,7 @@ export function formatWarning(detail: WarningDetail): string {
       return 'Language skipped: ' + detail.reason;
 
     case 'partial-translation':
-      return (
-        'Partial translation (' + detail.added + '/' + detail.total + '): ' + detail.reason
-      );
+      return 'Partial translation (' + detail.added + '/' + detail.total + '): ' + detail.reason;
 
     case 'strings-empty':
       return detail.count + ' string(s) came back empty and kept their source text.';

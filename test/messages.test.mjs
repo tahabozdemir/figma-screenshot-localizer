@@ -35,8 +35,14 @@ test('a generate config is filled in and sanitized', () => {
 });
 
 test('a generate with no usable target is refused outright', () => {
-  assert.equal(parseUiToPlugin({ type: 'generate', config: { ...validConfig, targets: [] } }), null);
-  assert.equal(parseUiToPlugin({ type: 'generate', config: { ...validConfig, targets: 'DE' } }), null);
+  assert.equal(
+    parseUiToPlugin({ type: 'generate', config: { ...validConfig, targets: [] } }),
+    null
+  );
+  assert.equal(
+    parseUiToPlugin({ type: 'generate', config: { ...validConfig, targets: 'DE' } }),
+    null
+  );
   assert.equal(parseUiToPlugin({ type: 'generate' }), null);
 });
 
@@ -77,7 +83,10 @@ test('settings and secrets are normalized on the way in', () => {
   assert.deepEqual(msg.settings.targets, ['DE']);
   assert.equal(msg.settings.openaiKey, undefined);
 
-  const secrets = parseUiToPlugin({ type: 'save-secrets', secrets: { openaiKey: 'sk-x', bogus: 1 } });
+  const secrets = parseUiToPlugin({
+    type: 'save-secrets',
+    secrets: { openaiKey: 'sk-x', bogus: 1 },
+  });
   assert.equal(secrets.secrets.openaiKey, 'sk-x');
   assert.equal(secrets.secrets.bogus, undefined);
 });

@@ -35,20 +35,20 @@ Then in Figma (desktop app):
 
 Other scripts:
 
-| Command             | What it does                                              |
-| ------------------- | --------------------------------------------------------- |
-| `npm run build`     | Type-checks both projects, then builds `dist/`             |
+| Command             | What it does                                                |
+| ------------------- | ----------------------------------------------------------- |
+| `npm run build`     | Type-checks both projects, then builds `dist/`              |
 | `npm run watch`     | Rebuilds on save (re-run the plugin in Figma to pick it up) |
-| `npm run typecheck` | Type-check only                                            |
-| `npm test`          | Tests (`node --test`, no extra deps) — see [Tests](#tests) |
-| `npm run clean`     | Delete `dist/` and `dist-test/`                            |
+| `npm run typecheck` | Type-check only                                             |
+| `npm test`          | Tests (`node --test`, no extra deps) — see [Tests](#tests)  |
+| `npm run clean`     | Delete `dist/` and `dist-test/`                             |
 
 ---
 
 ## Using it
 
 1. Select one or more frames on the canvas. Any frame works — no naming convention, no tagging, no
-   special layer names. Groups, components and instances are fine too. Selecting a frame *and*
+   special layer names. Groups, components and instances are fine too. Selecting a frame _and_
    something inside it is safe: the nested one is dropped so it is not duplicated twice.
 2. The panel shows how many frames and text layers it found. **Refresh selection** re-scans.
 3. Pick your source language and tick the target languages (searchable, multi-select).
@@ -56,23 +56,23 @@ Other scripts:
 5. Press **Generate Localized Screenshots**.
 
 Each language gets its own column of frames placed to the right of everything already on the page,
-so re-running never lands on top of your previous output. (Turn on *Update frames from an earlier
-run* if you would rather replace last run's frames in place.) When it finishes, the new frames are
+so re-running never lands on top of your previous output. (Turn on _Update frames from an earlier
+run_ if you would rather replace last run's frames in place.) When it finishes, the new frames are
 selected and the viewport zooms to them.
 
 Drag the bottom-right corner to resize the panel.
 
 ### Translation modes
 
-| Mode | Key | Notes |
-| --- | --- | --- |
-| Manual | — | You type everything |
-| OpenAI | `Authorization: Bearer` | Best at following instructions and keeping copy punchy |
-| Gemini | `x-goog-api-key` | Same, usually cheaper |
-| Google Translate | `x-goog-api-key` | Cloud Translation API. Fast, cheap, 64 strings per request |
-| Google Translate (free) | none | Unofficial endpoint — see the caveats below |
-| DeepL | `DeepL-Auth-Key` | Usually the best quality for European languages |
-| DeepL (Free API) | `DeepL-Auth-Key` | Same engine, 500k characters/month at no cost |
+| Mode                    | Key                     | Notes                                                      |
+| ----------------------- | ----------------------- | ---------------------------------------------------------- |
+| Manual                  | —                       | You type everything                                        |
+| OpenAI                  | `Authorization: Bearer` | Best at following instructions and keeping copy punchy     |
+| Gemini                  | `x-goog-api-key`        | Same, usually cheaper                                      |
+| Google Translate        | `x-goog-api-key`        | Cloud Translation API. Fast, cheap, 64 strings per request |
+| Google Translate (free) | none                    | Unofficial endpoint — see the caveats below                |
+| DeepL                   | `DeepL-Auth-Key`        | Usually the best quality for European languages            |
+| DeepL (Free API)        | `DeepL-Auth-Key`        | Same engine, 500k characters/month at no cost              |
 
 **Manual** — the plugin lists every unique string in the selection. Expand a language and type the
 translations. `×3` next to a string means it appears on three layers; you translate it once. Entries
@@ -96,7 +96,7 @@ strict JSON keyed by the exact input ids.
 **Google Translate (Cloud API)** — `POST https://translation.googleapis.com/language/translate/v2`.
 The key must belong to a project with the Cloud Translation API enabled; a 403 says so explicitly.
 Requests use `format: html` so placeholders and your do-not-translate terms can be wrapped in
-`<span translate="no">` (see *Protecting placeholders* below).
+`<span translate="no">` (see _Protecting placeholders_ below).
 
 **Google Translate (free)** — the undocumented `translate.googleapis.com/translate_a/single`
 endpoint behind Google's web widget. No key, no cost, and no guarantees:
@@ -122,11 +122,11 @@ discard the batches that succeeded.
 
 Retries are deliberate about what is worth repeating:
 
-| Failure | Retried? |
-| --- | --- |
-| Rate limit (429), server error (5xx) | Yes — up to 3 attempts, honouring `Retry-After` |
-| Transport failure (dropped connection, CORS) | Yes — and through the other route (see below) |
-| Auth/quota/bad request (401, 403, 413, 456) | No — the answer will not change |
+| Failure                                                                                | Retried?                                                              |
+| -------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| Rate limit (429), server error (5xx)                                                   | Yes — up to 3 attempts, honouring `Retry-After`                       |
+| Transport failure (dropped connection, CORS)                                           | Yes — and through the other route (see below)                         |
+| Auth/quota/bad request (401, 403, 413, 456)                                            | No — the answer will not change                                       |
 | Unusable response (no `translations` array, blocked completion, prose instead of JSON) | No — but an LLM gets exactly one "reply with strict JSON" nudge first |
 
 That last row matters: re-sending an identical request that the server already accepted produces an
@@ -167,7 +167,7 @@ forgotten either.
 
 ### Glossary
 
-`Never translate` keeps a term in English. The glossary is the other half: terms that *should* be
+`Never translate` keeps a term in English. The glossary is the other half: terms that _should_ be
 translated, but always the same way. One per line, in the Options section:
 
 ```
@@ -185,7 +185,7 @@ this plugin uses, so the field is ignored there.
 ### Fitting the copy to the layout
 
 Machine translation has no idea how much room a caption has. The AI modes do, if you tell them, and
-*Let the AI fit the copy to the layout* (on by default) does exactly that in two steps:
+_Let the AI fit the copy to the layout_ (on by default) does exactly that in two steps:
 
 1. **Before translating**, every layer is measured — how much space it has versus how much its
    current text uses — and that ratio becomes a character budget for the string. Where one string
@@ -194,7 +194,7 @@ Machine translation has no idea how much room a caption has. The AI modes do, if
    than 1.6× the source are dropped as prompt noise. Strings that carry one arrive as
    `{"id": "…", "text": "…", "maxChars": 34}`.
 2. **After writing**, anything that still overflows goes back in one batched request — not as a
-   retranslation, but as *"say this shorter, in the same language, within N characters"*. The layer
+   retranslation, but as _"say this shorter, in the same language, within N characters"_. The layer
    is reset to the designer's original font size before the fit runs again, so the 85% floor is
    measured against the design and not against the already-shrunk state. Only layers that still do
    not fit after that become warnings, and the summary counts how many were rescued.
@@ -222,17 +222,17 @@ can only reach the domains allow-listed in `manifest.json`.
 
 ### Options
 
-| Option                             | Default | Behaviour                                                                                                     |
-| ---------------------------------- | ------- | ------------------------------------------------------------------------------------------------------------- |
-| Create one folder/frame per language | off     | Wraps each language's frames in a Section named `[DE] German` (falls back to a plain frame if Sections are unavailable) |
-| Keep original frames unchanged     | **on**  | Sources are never touched. When **off**, sources are only *renamed* with the source-language tag — never deleted or edited |
-| Auto-adjust text when longer       | **on**  | Runs the fit algorithm below                                                                                   |
-| Detect text overflow               | **on**  | Produces the warning list                                                                                      |
-| Preserve original text formatting  | **on**  | Re-applies mixed character styling (see limitations)                                                           |
-| Add language suffix to frame names | **on**  | `Hero_DE`. Turn off for `[DE] Hero`                                                                            |
-| Let the AI fit the copy to the layout | **on** | AI modes only. Sends each string its measured character budget, then asks for a shorter wording for whatever still overflows |
-| Update frames from an earlier run  | off     | Replaces a frame of the same name in place — same position, same parent — instead of adding another column. The old frame is deleted |
-| Debug logging                      | off     | Logs the failures the plugin normally swallows (a locked layer, an unsupported property, storage over quota) to the developer console. Worth turning on before filing a bug |
+| Option                                | Default | Behaviour                                                                                                                                                                   |
+| ------------------------------------- | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Create one folder/frame per language  | off     | Wraps each language's frames in a Section named `[DE] German` (falls back to a plain frame if Sections are unavailable)                                                     |
+| Keep original frames unchanged        | **on**  | Sources are never touched. When **off**, sources are only _renamed_ with the source-language tag — never deleted or edited                                                  |
+| Auto-adjust text when longer          | **on**  | Runs the fit algorithm below                                                                                                                                                |
+| Detect text overflow                  | **on**  | Produces the warning list                                                                                                                                                   |
+| Preserve original text formatting     | **on**  | Re-applies mixed character styling (see limitations)                                                                                                                        |
+| Add language suffix to frame names    | **on**  | `Hero_DE`. Turn off for `[DE] Hero`                                                                                                                                         |
+| Let the AI fit the copy to the layout | **on**  | AI modes only. Sends each string its measured character budget, then asks for a shorter wording for whatever still overflows                                                |
+| Update frames from an earlier run     | off     | Replaces a frame of the same name in place — same position, same parent — instead of adding another column. The old frame is deleted                                        |
+| Debug logging                         | off     | Logs the failures the plugin normally swallows (a locked layer, an unsupported property, storage over quota) to the developer console. Worth turning on before filing a bug |
 
 Naming strips an existing language tag first, so `01_Hero_EN` becomes `01_Hero_DE`, not
 `01_Hero_EN_DE`. Only tags that match a known language code are stripped — `Hero_V2` is left alone.
@@ -328,11 +328,11 @@ leaves it.
 ## Known limitations
 
 - **Component instances.** Text inside instances is edited as an override, which Figma allows. If the
-  layer is bound to a component *text property*, the plugin routes the change through
+  layer is bound to a component _text property_, the plugin routes the change through
   `instance.setProperties()` instead. If Figma rejects both (locked layer, restricted nested
   instance), that layer is skipped with an `error` warning rather than failing the frame.
 - **Mixed character styling.** Assigning `characters` collapses per-character styles to the first
-  character's style — that's the Figma API, not a choice. With *Preserve original text formatting*
+  character's style — that's the Figma API, not a choice. With _Preserve original text formatting_
   on, the original segments are re-applied over proportional ranges of the translated string, snapped
   to the nearest word boundary, and the layer gets an `info` warning. For a bold word in the middle
   of a sentence the split will usually land close but not exactly right; check those layers.
@@ -434,17 +434,17 @@ languages, cancellation — against fakes, with no Figma and no network.
 npm test
 ```
 
-| File | Covers |
-| --- | --- |
-| `pure.test.mjs` | Hashing, frame naming, batching, placeholder protection, prompts, output parsing |
-| `text-engine.test.mjs` | Measurement and character-budget maths against fake nodes |
-| `providers.test.mjs` | Every provider against a scripted transport: batching, retry policy, redaction, DeepL key routing, the temperature fallback, the malformed-JSON nudge |
-| `pipeline.test.mjs` | `generate()` end to end against a fake document |
-| `storage.test.mjs` | The v1 → v2 migration, quota caps, translation-memory bucketing |
-| `registry.test.mjs` | Registry invariants, and that `manifest.json` matches the code |
-| `messages.test.mjs` | Protocol validation — junk in, nothing out |
-| `warnings.test.mjs` | Every warning code renders |
-| `rpc.test.mjs` | Request/reply and cancellation semantics |
+| File                   | Covers                                                                                                                                                |
+| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pure.test.mjs`        | Hashing, frame naming, batching, placeholder protection, prompts, output parsing                                                                      |
+| `text-engine.test.mjs` | Measurement and character-budget maths against fake nodes                                                                                             |
+| `providers.test.mjs`   | Every provider against a scripted transport: batching, retry policy, redaction, DeepL key routing, the temperature fallback, the malformed-JSON nudge |
+| `pipeline.test.mjs`    | `generate()` end to end against a fake document                                                                                                       |
+| `storage.test.mjs`     | The v1 → v2 migration, quota caps, translation-memory bucketing                                                                                       |
+| `registry.test.mjs`    | Registry invariants, and that `manifest.json` matches the code                                                                                        |
+| `messages.test.mjs`    | Protocol validation — junk in, nothing out                                                                                                            |
+| `warnings.test.mjs`    | Every warning code renders                                                                                                                            |
+| `rpc.test.mjs`         | Request/reply and cancellation semantics                                                                                                              |
 
 ---
 

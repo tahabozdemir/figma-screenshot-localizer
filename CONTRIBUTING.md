@@ -12,17 +12,17 @@ npm run build
 npm test
 ```
 
-Then in the Figma **desktop app**: *Plugins → Development → Import plugin from manifest…* and pick
+Then in the Figma **desktop app**: _Plugins → Development → Import plugin from manifest…_ and pick
 `manifest.json`. `npm run watch` rebuilds on save, but Figma still needs the plugin re-run to pick up
 a new build.
 
-| Command | What it does |
-| --- | --- |
-| `npm run build` | Type-checks both projects, then builds `dist/` |
-| `npm run watch` | Rebuilds on save |
-| `npm run typecheck` | Type-check only |
-| `npm test` | Unit tests — no network, no Figma, no extra dependencies |
-| `npm run clean` | Delete `dist/` and `dist-test/` |
+| Command             | What it does                                             |
+| ------------------- | -------------------------------------------------------- |
+| `npm run build`     | Type-checks both projects, then builds `dist/`           |
+| `npm run watch`     | Rebuilds on save                                         |
+| `npm run typecheck` | Type-check only                                          |
+| `npm test`          | Unit tests — no network, no Figma, no extra dependencies |
+| `npm run clean`     | Delete `dist/` and `dist-test/`                          |
 
 ## The one structural thing to know
 
@@ -38,7 +38,7 @@ That is why there are two `tsconfig`s. If you add a file, put it in the right pr
 it will not be type-checked at all.
 
 The two threads talk only through the message protocol in `src/shared/messages.ts`, and every inbound
-message is validated on arrival. If you add a message, add it to the union *and* to the parser.
+message is validated on arrival. If you add a message, add it to the union _and_ to the parser.
 
 ## Please do
 
@@ -47,7 +47,7 @@ message is validated on arrival. If you add a message, add it to the union *and*
   feels that way, the dependency probably wants to be a parameter.
 - **Keep the dependency count at zero.** The plugin ships no runtime dependencies, which is a large
   part of why it can credibly claim to be local-only. A PR that adds one needs a good reason.
-- **Explain *why* in comments**, not *what*. The existing comments are mostly about decisions that
+- **Explain _why_ in comments**, not _what_. The existing comments are mostly about decisions that
   look wrong until you know the constraint. Match that.
 - **Raise warnings as codes**, not sentences. Add the code to `src/shared/warnings.ts` and let the UI
   format it — that keeps the wording testable and translatable.

@@ -9,12 +9,26 @@
 import type { LanguageDef } from './types';
 
 export const LANGUAGES: LanguageDef[] = [
-  { code: 'EN', tag: 'en', name: 'English', rtl: false, script: 'latin', engine: { deeplTarget: 'EN-US' } },
+  {
+    code: 'EN',
+    tag: 'en',
+    name: 'English',
+    rtl: false,
+    script: 'latin',
+    engine: { deeplTarget: 'EN-US' },
+  },
   { code: 'DE', tag: 'de', name: 'German', rtl: false, script: 'latin' },
   { code: 'FR', tag: 'fr', name: 'French', rtl: false, script: 'latin' },
   { code: 'ES', tag: 'es', name: 'Spanish', rtl: false, script: 'latin' },
   { code: 'IT', tag: 'it', name: 'Italian', rtl: false, script: 'latin' },
-  { code: 'PT', tag: 'pt', name: 'Portuguese', rtl: false, script: 'latin', engine: { google: 'pt', deeplTarget: 'PT-PT' } },
+  {
+    code: 'PT',
+    tag: 'pt',
+    name: 'Portuguese',
+    rtl: false,
+    script: 'latin',
+    engine: { google: 'pt', deeplTarget: 'PT-PT' },
+  },
   { code: 'TR', tag: 'tr', name: 'Turkish', rtl: false, script: 'latin' },
   { code: 'NL', tag: 'nl', name: 'Dutch', rtl: false, script: 'latin' },
   { code: 'PL', tag: 'pl', name: 'Polish', rtl: false, script: 'latin' },

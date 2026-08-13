@@ -76,7 +76,10 @@ export function normalizeOptions(raw: unknown): GenerateOptions {
 /** Fills every field, drops anything unrecognized, never throws. */
 export function normalizeSettings(raw: unknown): PersistedSettings {
   const src = (raw && typeof raw === 'object' ? raw : {}) as Partial<PersistedSettings>;
-  const mode = MODES.indexOf(src.mode as TranslationMode) >= 0 ? (src.mode as TranslationMode) : DEFAULT_SETTINGS.mode;
+  const mode =
+    MODES.indexOf(src.mode as TranslationMode) >= 0
+      ? (src.mode as TranslationMode)
+      : DEFAULT_SETTINGS.mode;
   return {
     sourceLanguage: str(src.sourceLanguage, DEFAULT_SETTINGS.sourceLanguage),
     targets: stringList(src.targets),

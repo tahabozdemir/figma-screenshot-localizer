@@ -1,7 +1,19 @@
 import { LLM_POLICY, ResponseError, hasBudgets, httpError, missingKey, runChunks } from './base';
-import { buildShortenPrompt, buildSystemPrompt, buildUserPayload, NUDGE, parseTranslations } from './prompt';
+import {
+  buildShortenPrompt,
+  buildSystemPrompt,
+  buildUserPayload,
+  NUDGE,
+  parseTranslations,
+} from './prompt';
 import { parseJson, type Transport } from './transport';
-import type { ProviderContext, TranslateRequest, TranslateResult, TranslationProvider } from './types';
+import type {
+  ChunkPolicy,
+  ProviderContext,
+  TranslateRequest,
+  TranslateResult,
+  TranslationProvider,
+} from './types';
 
 export const GEMINI_BASE = 'https://generativelanguage.googleapis.com/v1beta/models/';
 export const DEFAULT_GEMINI_MODEL = 'gemini-2.0-flash';
@@ -11,11 +23,13 @@ export class GeminiProvider implements TranslationProvider {
   readonly name = 'Gemini';
 
   private readonly transport: Transport;
+  private readonly policy: ChunkPolicy;
   private readonly apiKey: string;
   private readonly model: string;
 
-  constructor(deps: { transport: Transport; apiKey: string; model: string }) {
+  constructor(deps: { transport: Transport; apiKey: string; model: string; policy?: ChunkPolicy }) {
     this.transport = deps.transport;
+    this.policy = deps.policy || LLM_POLICY;
     this.apiKey = deps.apiKey;
     this.model = deps.model || DEFAULT_GEMINI_MODEL;
   }
@@ -34,7 +48,11 @@ export class GeminiProvider implements TranslationProvider {
     return this.run(req, ctx, buildShortenPrompt(req.target, ctx.doNotTranslate, ctx.glossary));
   }
 
-  private run(req: TranslateRequest, ctx: ProviderContext, system: string): Promise<TranslateResult> {
+  private run(
+    req: TranslateRequest,
+    ctx: ProviderContext,
+    system: string
+  ): Promise<TranslateResult> {
     const url = GEMINI_BASE + encodeURIComponent(this.model) + ':generateContent';
 
     return runChunks(
@@ -80,7 +98,7 @@ export class GeminiProvider implements TranslationProvider {
         return parseTranslations(text, items);
       },
       this.apiKey,
-      LLM_POLICY
+      this.policy
     );
   }
 }

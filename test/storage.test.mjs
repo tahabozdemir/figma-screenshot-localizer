@@ -78,7 +78,11 @@ test('a v1 install is migrated on first load and the old blob is removed', async
   assert.equal(state.secrets.deeplKey, 'dl-1');
   assert.ok(port.map.has(SETTINGS_KEY));
   assert.ok(port.map.has(SECRETS_KEY));
-  assert.equal(port.map.has(LEGACY_SETTINGS_KEY), false, 'the old blob still holds the plaintext keys');
+  assert.equal(
+    port.map.has(LEGACY_SETTINGS_KEY),
+    false,
+    'the old blob still holds the plaintext keys'
+  );
   assert.equal(port.map.get(SETTINGS_KEY).deeplKey, undefined);
 });
 
@@ -93,7 +97,10 @@ test('migration does not run again once v2 exists', async () => {
 
   assert.equal(state.settings.mode, 'openai');
   assert.equal(state.secrets.openaiKey, 'sk-new');
-  assert.ok(port.map.has(LEGACY_SETTINGS_KEY), 'nothing should be deleted when there is no migration');
+  assert.ok(
+    port.map.has(LEGACY_SETTINGS_KEY),
+    'nothing should be deleted when there is no migration'
+  );
 });
 
 test('a fresh install loads defaults without writing anything', async () => {
@@ -106,7 +113,12 @@ test('a fresh install loads defaults without writing anything', async () => {
 
 test('garbage in storage is normalized rather than trusted', async () => {
   const port = memoryPort({
-    [SETTINGS_KEY]: { mode: 'not-a-provider', targets: ['DE', 42, null], options: 'nope', debug: 'yes' },
+    [SETTINGS_KEY]: {
+      mode: 'not-a-provider',
+      targets: ['DE', 42, null],
+      options: 'nope',
+      debug: 'yes',
+    },
     [SECRETS_KEY]: { openaiKey: 12345 },
   });
 

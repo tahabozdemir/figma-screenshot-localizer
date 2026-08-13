@@ -153,7 +153,11 @@ export class Storage {
 
   /* ---- translation memory ---- */
 
-  async loadTM(cacheKey: string | null, source: string, target: string): Promise<Record<string, string>> {
+  async loadTM(
+    cacheKey: string | null,
+    source: string,
+    target: string
+  ): Promise<Record<string, string>> {
     if (!cacheKey) return {};
     const raw = await this.read(tmKey(cacheKey, source, target));
     if (!raw || typeof raw !== 'object') return {};

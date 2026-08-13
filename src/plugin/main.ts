@@ -78,7 +78,7 @@ function sendSelection(): void {
 let selectionTimer = 0;
 function scheduleSelectionScan(): void {
   clearTimeout(selectionTimer);
-  selectionTimer = setTimeout(sendSelection, SELECTION_DEBOUNCE_MS) as unknown as number;
+  selectionTimer = setTimeout(sendSelection, SELECTION_DEBOUNCE_MS);
 }
 
 async function runGeneration(config: GenerateConfig): Promise<void> {
@@ -133,7 +133,7 @@ function describeMessage(raw: unknown): string {
   return typeof type === 'string' ? 'type=' + type : 'no type field';
 }
 
-figma.ui.onmessage = async (raw: unknown) => {
+async function handleMessage(raw: unknown): Promise<void> {
   const msg = parseUiToPlugin(raw);
   if (!msg) {
     // A build mismatch between the two threads looks exactly like nothing
@@ -146,7 +146,12 @@ figma.ui.onmessage = async (raw: unknown) => {
     case 'ui-ready': {
       const state = await storage.loadAll();
       setDebugLogging(state.settings.debug);
-      post({ type: 'settings', settings: state.settings, secrets: state.secrets, manual: state.manual });
+      post({
+        type: 'settings',
+        settings: state.settings,
+        secrets: state.secrets,
+        manual: state.manual,
+      });
       sendSelection();
       break;
     }
@@ -170,7 +175,8 @@ figma.ui.onmessage = async (raw: unknown) => {
       if (dropped) {
         // Hand-typed text. Losing it quietly is not an option.
         doc.notify(
-          dropped + ' manual translation(s) could not be saved — the local storage limit was reached.',
+          dropped +
+            ' manual translation(s) could not be saved — the local storage limit was reached.',
           { error: true }
         );
       }
@@ -206,7 +212,7 @@ figma.ui.onmessage = async (raw: unknown) => {
       for (const id of msg.ids) {
         try {
           const node = await doc.getNodeById(id);
-          if (node && node.type !== 'PAGE' && node.type !== 'DOCUMENT') nodes.push(node as SceneNode);
+          if (node && node.type !== 'PAGE' && node.type !== 'DOCUMENT') nodes.push(node);
         } catch (e) {
           swallow('select-nodes: ' + id, e);
         }
@@ -241,4 +247,17 @@ figma.ui.onmessage = async (raw: unknown) => {
       figma.closePlugin();
       break;
   }
+}
+
+/**
+ * The handler is async, and `onmessage` expects a void return — so a rejection
+ * inside any branch above would otherwise be an unhandled rejection that
+ * vanishes without a trace. Catching it here turns "the button did nothing"
+ * into a message in the panel.
+ */
+figma.ui.onmessage = (raw: unknown) => {
+  void handleMessage(raw).catch((e) => {
+    swallow('message handler', e);
+    post({ type: 'error', message: errorText(e) });
+  });
 };

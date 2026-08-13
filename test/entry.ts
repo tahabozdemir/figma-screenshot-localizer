@@ -36,7 +36,17 @@ export { CancellationToken } from '../src/shared/cancellation';
 export { escapeMarkup } from '../src/shared/html';
 
 /* ---- providers ---- */
-export { chunk, withRetry, httpError, redact, HttpError } from '../src/providers/base';
+export {
+  chunk,
+  withRetry,
+  httpError,
+  redact,
+  HttpError,
+  LLM_POLICY,
+  GOOGLE_POLICY,
+  DEEPL_POLICY,
+  GOOGLE_FREE_POLICY,
+} from '../src/providers/base';
 export {
   protectedRanges,
   markProtected,
@@ -63,18 +73,14 @@ export {
   PROVIDERS,
   PROVIDER_LIST,
   getProvider,
+  createProvider,
   allDomains,
   fieldValue,
   missingCredential,
 } from '../src/providers/registry';
 
 /* ---- plugin ---- */
-export {
-  capacityChars,
-  autoFit,
-  MIN_FONT_SCALE,
-  MAX_FONT_SCALE,
-} from '../src/plugin/text-engine';
+export { capacityChars, autoFit, MIN_FONT_SCALE, MAX_FONT_SCALE } from '../src/plugin/text-engine';
 export { scanNodes, selectedContainers, CLONEABLE } from '../src/plugin/selection';
 export { unionBounds, firstColumnX, indexExistingByName } from '../src/plugin/layout';
 export {
@@ -89,4 +95,13 @@ export {
   TM_PREFIX,
 } from '../src/plugin/storage';
 export { computeBudgets, localizeFrame, runFitPass } from '../src/plugin/localize';
-export { generate } from '../src/plugin/pipeline';
+export { generate, PREFETCH_LANGUAGES } from '../src/plugin/pipeline';
+
+/* ---- ui (import-time side-effect free; bootstrap.ts is deliberately absent) ---- */
+export { el, clear, replace, setHidden, $ } from '../src/ui/dom';
+export { state } from '../src/ui/state';
+export { buildModePicker, renderMode, renderProviderFields } from '../src/ui/views/mode';
+export { renderSelection } from '../src/ui/views/selection';
+export { renderWarnings, renderDone, showView, showFormError } from '../src/ui/views/shell';
+export { renderOptions } from '../src/ui/views/options';
+export { renderManualEditor } from '../src/ui/views/manual';

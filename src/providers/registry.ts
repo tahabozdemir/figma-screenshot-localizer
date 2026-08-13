@@ -22,6 +22,7 @@ import type {
   SecretKey,
   TranslationMode,
 } from '../shared/types';
+import { DEEPL_POLICY, GOOGLE_FREE_POLICY, GOOGLE_POLICY, LLM_POLICY } from './base';
 import { DeepLProvider } from './deepl';
 import { GeminiProvider, DEFAULT_GEMINI_MODEL } from './gemini';
 import { GoogleFreeProvider } from './google-free';
@@ -29,14 +30,12 @@ import { GoogleTranslateProvider } from './google';
 import { ManualProvider } from './manual';
 import { OpenAIProvider, DEFAULT_OPENAI_MODEL } from './openai';
 import type { Transport } from './transport';
-import type { TranslationProvider } from './types';
+import type { ChunkPolicy, TranslationProvider } from './types';
 
 /** Settings fields a provider may expose (models — never secrets). */
 export type ModelKey = 'openaiModel' | 'geminiModel';
 
-export type FieldTarget =
-  | { scope: 'secret'; key: SecretKey }
-  | { scope: 'setting'; key: ModelKey };
+export type FieldTarget = { scope: 'secret'; key: SecretKey } | { scope: 'setting'; key: ModelKey };
 
 export interface ProviderField {
   /** Unique within the provider; the DOM id becomes `field-<provider>-<id>`. */
@@ -101,8 +100,14 @@ export interface ProviderDescriptor {
    * answer, because a cache hit meant the new model was never asked — the same
    * bug that made the engine part of the key in the first place.
    */
+  /**
+   * How this provider's requests are batched, and how many run at once.
+   * Declared here so the request shape of every engine is readable in one
+   * place — the defaults live in `base.ts`.
+   */
+  policy: ChunkPolicy;
   cacheKey(state: ProviderConfigState): string | null;
-  create(state: ProviderState): TranslationProvider;
+  create(state: ProviderState, policy: ChunkPolicy): TranslationProvider;
   /**
    * Extra precondition beyond a missing credential. Returns the message to
    * show, or null when the provider is ready.
@@ -128,6 +133,8 @@ export const PROVIDERS: Record<TranslationMode, ProviderDescriptor> = {
     fields: [],
     capabilities: NO_CAPABILITIES,
     domains: [],
+    // Never used: ManualProvider reads a table and makes no request.
+    policy: { maxItems: Infinity, maxChars: Infinity, concurrency: 1 },
     // The manual table is the only source of truth, so an edited string always
     // wins; a cache would just replay what the designer already replaced.
     cacheKey: () => null,
@@ -164,12 +171,14 @@ export const PROVIDERS: Record<TranslationMode, ProviderDescriptor> = {
     ],
     capabilities: LLM_CAPABILITIES,
     domains: ['https://api.openai.com'],
+    policy: LLM_POLICY,
     cacheKey: (s) => 'openai/' + trimmed(s.settings.openaiModel, DEFAULT_OPENAI_MODEL),
-    create: (s) =>
+    create: (s, policy) =>
       new OpenAIProvider({
         transport: s.transport,
         apiKey: trimmed(s.secrets.openaiKey),
         model: trimmed(s.settings.openaiModel, DEFAULT_OPENAI_MODEL),
+        policy,
       }),
   },
 
@@ -197,12 +206,14 @@ export const PROVIDERS: Record<TranslationMode, ProviderDescriptor> = {
     ],
     capabilities: LLM_CAPABILITIES,
     domains: ['https://generativelanguage.googleapis.com'],
+    policy: LLM_POLICY,
     cacheKey: (s) => 'gemini/' + trimmed(s.settings.geminiModel, DEFAULT_GEMINI_MODEL),
-    create: (s) =>
+    create: (s, policy) =>
       new GeminiProvider({
         transport: s.transport,
         apiKey: trimmed(s.secrets.geminiKey),
         model: trimmed(s.settings.geminiModel, DEFAULT_GEMINI_MODEL),
+        policy,
       }),
   },
 
@@ -226,9 +237,14 @@ export const PROVIDERS: Record<TranslationMode, ProviderDescriptor> = {
     ],
     capabilities: NO_CAPABILITIES,
     domains: ['https://translation.googleapis.com'],
+    policy: GOOGLE_POLICY,
     cacheKey: () => 'google',
-    create: (s) =>
-      new GoogleTranslateProvider({ transport: s.transport, apiKey: trimmed(s.secrets.googleKey) }),
+    create: (s, policy) =>
+      new GoogleTranslateProvider({
+        transport: s.transport,
+        apiKey: trimmed(s.secrets.googleKey),
+        policy,
+      }),
   },
 
   'google-free': {
@@ -244,8 +260,9 @@ export const PROVIDERS: Record<TranslationMode, ProviderDescriptor> = {
     fields: [],
     capabilities: NO_CAPABILITIES,
     domains: ['https://translate.googleapis.com'],
+    policy: GOOGLE_FREE_POLICY,
     cacheKey: () => 'google-free',
-    create: (s) => new GoogleFreeProvider({ transport: s.transport }),
+    create: (s, policy) => new GoogleFreeProvider({ transport: s.transport, policy }),
   },
 
   deepl: {
@@ -268,10 +285,16 @@ export const PROVIDERS: Record<TranslationMode, ProviderDescriptor> = {
     ],
     capabilities: NO_CAPABILITIES,
     domains: ['https://api.deepl.com', 'https://api-free.deepl.com'],
+    policy: DEEPL_POLICY,
     // Pro and Free share a bucket: same engine, different billing tier.
     cacheKey: () => 'deepl',
-    create: (s) =>
-      new DeepLProvider({ transport: s.transport, apiKey: trimmed(s.secrets.deeplKey), freeTier: false }),
+    create: (s, policy) =>
+      new DeepLProvider({
+        transport: s.transport,
+        apiKey: trimmed(s.secrets.deeplKey),
+        freeTier: false,
+        policy,
+      }),
   },
 
   'deepl-free': {
@@ -292,9 +315,15 @@ export const PROVIDERS: Record<TranslationMode, ProviderDescriptor> = {
     ],
     capabilities: NO_CAPABILITIES,
     domains: ['https://api-free.deepl.com'],
+    policy: DEEPL_POLICY,
     cacheKey: () => 'deepl',
-    create: (s) =>
-      new DeepLProvider({ transport: s.transport, apiKey: trimmed(s.secrets.deeplFreeKey), freeTier: true }),
+    create: (s, policy) =>
+      new DeepLProvider({
+        transport: s.transport,
+        apiKey: trimmed(s.secrets.deeplFreeKey),
+        freeTier: true,
+        policy,
+      }),
   },
 };
 
@@ -313,8 +342,21 @@ export function getProvider(mode: TranslationMode): ProviderDescriptor {
   return PROVIDERS[mode] || PROVIDERS.manual;
 }
 
+/**
+ * Builds a provider from its descriptor, handing it the batching policy the
+ * descriptor declared. Always go through this rather than calling `create`
+ * directly, so the registry stays the only place a policy is chosen.
+ */
+export function createProvider(mode: TranslationMode, state: ProviderState): TranslationProvider {
+  const descriptor = getProvider(mode);
+  return descriptor.create(state, descriptor.policy);
+}
+
 /** Reads a field's current value out of settings/secrets. */
-export function fieldValue(field: ProviderField, state: { settings: PersistedSettings; secrets: Secrets }): string {
+export function fieldValue(
+  field: ProviderField,
+  state: { settings: PersistedSettings; secrets: Secrets }
+): string {
   return field.target.scope === 'secret'
     ? state.secrets[field.target.key]
     : state.settings[field.target.key];

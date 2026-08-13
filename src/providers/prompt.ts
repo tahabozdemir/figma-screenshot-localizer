@@ -163,7 +163,9 @@ export function buildShortenPrompt(
   }
   const terms = glossaryFor(glossary, target);
   if (terms.length) {
-    lines.push('- Keep these approved terms: ' + terms.map((t) => t.split(' -> ')[1]).join(', ') + '.');
+    lines.push(
+      '- Keep these approved terms: ' + terms.map((t) => t.split(' -> ')[1]).join(', ') + '.'
+    );
   }
   lines.push(
     '',
@@ -198,7 +200,7 @@ export function parseTranslations(raw: string, expected: SourceString[]): Record
   const bag =
     root && typeof root === 'object' && root.translations && typeof root.translations === 'object'
       ? (root.translations as Record<string, unknown>)
-      : (root as Record<string, unknown>);
+      : root;
 
   const wanted: Record<string, true> = {};
   for (const s of expected) wanted[s.id] = true;

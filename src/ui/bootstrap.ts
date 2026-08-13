@@ -17,13 +17,7 @@ import { mountManual, renderManualEditor, renderStringCount } from './views/manu
 import { buildModePicker, mountMode, renderMode, renderProviderFields } from './views/mode';
 import { mountOptions, renderOptions } from './views/options';
 import { renderSelection } from './views/selection';
-import {
-  renderDone,
-  renderWarnings,
-  setProgress,
-  showFormError,
-  showView,
-} from './views/shell';
+import { renderDone, renderWarnings, setProgress, showFormError, showView } from './views/shell';
 
 /** The manual editor only exists while its panel is the selected mode. */
 function renderManualIfVisible(): void {
@@ -46,7 +40,8 @@ function mountButtons(): void {
   $('warn-back').addEventListener('click', () => showView('done'));
 
   $('warn-list').addEventListener('click', (e) => {
-    const item = (e.target as HTMLElement).closest('.warn-item') as HTMLElement | null;
+    // The generic, not a cast: closest() returns Element, which has no dataset.
+    const item = (e.target as HTMLElement).closest<HTMLElement>('.warn-item');
     if (!item) return;
     const warning = state.warnings[Number(item.dataset.index)];
     if (warning && warning.nodeId) send({ type: 'select-nodes', ids: [warning.nodeId] });
@@ -89,7 +84,10 @@ function finishRun(): void {
 
 function mountMessages(): void {
   window.addEventListener('message', (event: MessageEvent) => {
-    const raw = event.data && event.data.pluginMessage;
+    // MessageEvent.data is `any` and this is a browser context: anything can
+    // post here. Narrow to unknown immediately and let the parser decide.
+    const envelope = event.data as { pluginMessage?: unknown } | null;
+    const raw: unknown = envelope && envelope.pluginMessage;
     const message = parsePluginToUi(raw);
     if (!message) return;
 
@@ -131,10 +129,7 @@ function mountMessages(): void {
 
       case 'progress': {
         const total = Math.max(1, message.langTotal * message.frameTotal);
-        const done = Math.max(
-          0,
-          (message.langIndex - 1) * message.frameTotal + message.frameIndex
-        );
+        const done = Math.max(0, (message.langIndex - 1) * message.frameTotal + message.frameIndex);
         setProgress(
           message.label,
           'Language ' +
@@ -176,7 +171,10 @@ export function init(): void {
   buildModePicker();
 
   mountLanguages({ onTargetsChanged: renderManualIfVisible });
-  mountMode({ onModeChanged: renderManualIfVisible, onCredentialChanged: () => showFormError(null) });
+  mountMode({
+    onModeChanged: renderManualIfVisible,
+    onCredentialChanged: () => showFormError(null),
+  });
   mountManual({ onReload: () => send({ type: 'scan' }) });
   mountOptions();
   mountButtons();

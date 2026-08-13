@@ -13,10 +13,21 @@ import { TransportError, parseJson } from './transport';
 import type { ChunkPolicy, ProviderContext, TranslateRequest, TranslateResult } from './types';
 import type { SourceString } from '../shared/types';
 
-export const LLM_POLICY: ChunkPolicy = { maxItems: 40, maxChars: 6000, concurrency: 1 };
-export const GOOGLE_POLICY: ChunkPolicy = { maxItems: 64, maxChars: 8000, concurrency: 1 };
-export const DEEPL_POLICY: ChunkPolicy = { maxItems: 40, maxChars: 20000, concurrency: 1 };
-/** The free endpoint takes one string per GET, so it leans on concurrency. */
+/*
+ * Batching defaults, declared per provider in the registry.
+ *
+ * `concurrency` is how many batches of one language are in flight at once, and
+ * it multiplies with PREFETCH_LANGUAGES in the pipeline — two languages ahead
+ * at concurrency 2 means up to four requests to the same API. These numbers are
+ * deliberately below every provider's documented limit rather than at it: a 429
+ * is recoverable but costs a backoff sleep, so the fast path is worth more than
+ * the last increment of parallelism.
+ */
+export const LLM_POLICY: ChunkPolicy = { maxItems: 40, maxChars: 6000, concurrency: 2 };
+export const GOOGLE_POLICY: ChunkPolicy = { maxItems: 64, maxChars: 8000, concurrency: 4 };
+export const DEEPL_POLICY: ChunkPolicy = { maxItems: 40, maxChars: 20000, concurrency: 2 };
+/** The free endpoint takes one string per GET, so it leans on concurrency —
+ *  but it is rate limited per machine, so not by much. */
 export const GOOGLE_FREE_POLICY: ChunkPolicy = { maxItems: 1, maxChars: 1500, concurrency: 3 };
 
 export const MAX_ATTEMPTS = 3;

@@ -127,12 +127,18 @@ export function qualityIssues(
     }
     for (const term of doNotTranslate) {
       if (!term) continue;
-      if (item.text.indexOf(term) >= 0 && translated.indexOf(term) < 0 && missing.indexOf(term) < 0) {
+      if (
+        item.text.indexOf(term) >= 0 &&
+        translated.indexOf(term) < 0 &&
+        missing.indexOf(term) < 0
+      ) {
         missing.push(term);
       }
     }
     if (missing.length) {
-      issues.push(missing.join(', ') + ' did not survive the translation of "' + preview(item.text) + '".');
+      issues.push(
+        missing.join(', ') + ' did not survive the translation of "' + preview(item.text) + '".'
+      );
     }
   }
   return issues;

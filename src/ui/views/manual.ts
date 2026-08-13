@@ -11,7 +11,9 @@ import { filledCount, persistManual, state } from '../state';
 function signature(): string {
   const ids: string[] = [];
   for (const item of state.strings) ids.push(item.id);
-  return state.settings.targets.join(',') + '|' + state.settings.sourceLanguage + '|' + ids.join(',');
+  return (
+    state.settings.targets.join(',') + '|' + state.settings.sourceLanguage + '|' + ids.join(',')
+  );
 }
 
 function targetLanguages(): LanguageDef[] {

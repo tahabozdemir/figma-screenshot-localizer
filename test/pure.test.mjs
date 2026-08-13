@@ -97,7 +97,10 @@ const strings = (n, length = 10) =>
 test('chunk respects the item limit and loses nothing', () => {
   const items = strings(95);
   const batches = chunk(items, { maxItems: 40, maxChars: 100000, concurrency: 1 });
-  assert.deepEqual(batches.map((b) => b.length), [40, 40, 15]);
+  assert.deepEqual(
+    batches.map((b) => b.length),
+    [40, 40, 15]
+  );
   assert.equal(batches.flat().length, items.length);
 });
 
@@ -242,7 +245,13 @@ test('glossaryFor only surfaces the target language', () => {
 /* ------------------------------------------------------------------ */
 
 test('the system prompt carries the constraints it promises', () => {
-  const prompt = buildSystemPrompt(EN, DE, ['HabitFlow'], parseGlossary('Streak = DE: Serie'), true);
+  const prompt = buildSystemPrompt(
+    EN,
+    DE,
+    ['HabitFlow'],
+    parseGlossary('Streak = DE: Serie'),
+    true
+  );
   assert.ok(prompt.includes('German'));
   assert.ok(prompt.includes('HabitFlow'));
   assert.ok(prompt.includes('"Streak" -> "Serie"'));

@@ -24,7 +24,7 @@ Specifically:
 
 Please **do not open a public issue** for a security problem.
 
-Use GitHub's private vulnerability reporting: go to the **Security** tab → *Report a vulnerability*.
+Use GitHub's private vulnerability reporting: go to the **Security** tab → _Report a vulnerability_.
 That opens a private advisory only the maintainers can see.
 
 Useful things to include: what an attacker controls, what they get, and the smallest reproduction you

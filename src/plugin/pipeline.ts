@@ -22,10 +22,29 @@ import {
   type LocalizeContext,
   type RequestTranslations,
 } from './localize';
-import { GROUP_GAP, CONTAINER_PADDING, absBox, createContainer, firstColumnX, indexExistingByName, unionBounds, type Container } from './layout';
+import {
+  GROUP_GAP,
+  CONTAINER_PADDING,
+  absBox,
+  createContainer,
+  firstColumnX,
+  indexExistingByName,
+  unionBounds,
+  type Container,
+} from './layout';
 import { scanSelection } from './selection';
 import type { Storage } from './storage';
 import * as TE from './text-engine';
+
+/**
+ * How many languages are resolved ahead of the cloning loop.
+ *
+ * 1 meant every language's round-trip was fully serialised behind the previous
+ * language being drawn. Raising it trades a little more concurrent API load for
+ * a materially shorter 21-language run; the provider's own `concurrency`
+ * multiplies with it, so both are kept deliberately small.
+ */
+export const PREFETCH_LANGUAGES = 2;
 
 export interface ProgressUpdate {
   label: string;
@@ -208,16 +227,23 @@ export async function generate(
   const canShorten = config.capabilities.shorten && config.options.fitToLayout;
   const budgets = useBudgets ? computeBudgets(sources, allStrings) : undefined;
 
-  /* First language starts now so its round-trip overlaps with the cloning. */
-  let pending: Promise<Resolved> | null = startLanguage(
-    targets[0],
-    sourceLang,
-    allStrings,
-    config,
-    deps,
-    budgets,
-    false
-  );
+  /* Languages are resolved ahead of the cloning loop so a round-trip overlaps
+     with drawing. Depth is the number of languages in flight at once, and it
+     multiplies with the provider's batch concurrency — 2 × 2 is four requests
+     to the same API, which is about as far as a free tier tolerates. */
+  const queue: Array<Promise<Resolved>> = [];
+  let nextToStart = 0;
+  const fillQueue = () => {
+    while (queue.length < PREFETCH_LANGUAGES && nextToStart < targets.length) {
+      // Only the language being drawn right now may own the progress label.
+      const quiet = nextToStart !== 0;
+      queue.push(
+        startLanguage(targets[nextToStart], sourceLang, allStrings, config, deps, budgets, quiet)
+      );
+      nextToStart++;
+    }
+  };
+  fillQueue();
 
   const bounds = unionBounds(sources);
   const startX = firstColumnX(doc, bounds);
@@ -245,12 +271,9 @@ export async function generate(
       frameTotal: sources.length,
     });
 
-    /* ---- 1. translations, then immediately queue the next language ---- */
-    const resolved = await (pending as Promise<Resolved>);
-    pending =
-      li + 1 < targets.length
-        ? startLanguage(targets[li + 1], sourceLang, allStrings, config, deps, budgets, true)
-        : null;
+    /* ---- 1. translations, then immediately top the queue back up ---- */
+    const resolved = await (queue.shift() as Promise<Resolved>);
+    fillQueue();
     if (token.cancelled) break;
 
     for (const note of resolved.notes) warnings.push(note);

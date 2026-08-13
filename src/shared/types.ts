@@ -12,13 +12,7 @@
  * UI panel) is read from that descriptor rather than re-listed per call site.
  */
 export type TranslationMode =
-  | 'manual'
-  | 'openai'
-  | 'gemini'
-  | 'google'
-  | 'google-free'
-  | 'deepl'
-  | 'deepl-free';
+  'manual' | 'openai' | 'gemini' | 'google' | 'google-free' | 'deepl' | 'deepl-free';
 
 export type Severity = 'error' | 'warn' | 'info';
 

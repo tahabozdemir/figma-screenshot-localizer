@@ -41,7 +41,8 @@ export function el<K extends keyof HTMLElementTagNameMap>(
     if (props.text !== undefined) node.textContent = props.text;
     if (props.autocomplete !== undefined) node.setAttribute('autocomplete', props.autocomplete);
     if (props.spellcheck !== undefined) node.spellcheck = props.spellcheck;
-    if (props.disabled !== undefined) (node as unknown as { disabled: boolean }).disabled = props.disabled;
+    if (props.disabled !== undefined)
+      (node as unknown as { disabled: boolean }).disabled = props.disabled;
 
     const input = node as unknown as {
       type?: string;

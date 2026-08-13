@@ -2,7 +2,13 @@ import { GOOGLE_POLICY, ResponseError, httpError, missingKey, runChunks } from '
 import { googleCode } from '../shared/languages';
 import { markProtected, unmarkProtected } from './protect';
 import { parseJson, type Transport } from './transport';
-import type { ProviderContext, TranslateRequest, TranslateResult, TranslationProvider } from './types';
+import type {
+  ChunkPolicy,
+  ProviderContext,
+  TranslateRequest,
+  TranslateResult,
+  TranslationProvider,
+} from './types';
 
 export const GOOGLE_URL = 'https://translation.googleapis.com/language/translate/v2';
 
@@ -15,10 +21,12 @@ export class GoogleTranslateProvider implements TranslationProvider {
   readonly name = 'Google Translate';
 
   private readonly transport: Transport;
+  private readonly policy: ChunkPolicy;
   private readonly apiKey: string;
 
-  constructor(deps: { transport: Transport; apiKey: string }) {
+  constructor(deps: { transport: Transport; apiKey: string; policy?: ChunkPolicy }) {
     this.transport = deps.transport;
+    this.policy = deps.policy || GOOGLE_POLICY;
     this.apiKey = deps.apiKey;
   }
 
@@ -77,7 +85,7 @@ export class GoogleTranslateProvider implements TranslationProvider {
         return out;
       },
       this.apiKey,
-      GOOGLE_POLICY
+      this.policy
     );
   }
 }

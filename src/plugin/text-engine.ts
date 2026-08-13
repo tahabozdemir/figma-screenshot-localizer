@@ -65,7 +65,7 @@ export function collectTextNodes(root: SceneNode): TextNode[] {
   const container = root as SceneNode & ChildrenMixin;
   if (!('children' in container)) return [];
   try {
-    return container.findAllWithCriteria({ types: ['TEXT'] }) as TextNode[];
+    return container.findAllWithCriteria({ types: ['TEXT'] });
   } catch (e) {
     swallow('collectTextNodes: findAllWithCriteria unavailable', e);
     return container.findAll((n) => n.type === 'TEXT') as TextNode[];
@@ -80,7 +80,7 @@ export function fontsOf(node: TextNode): FontName[] {
   const out: FontName[] = [];
   const fn = node.fontName;
   if (fn !== figma.mixed) {
-    out.push(fn as FontName);
+    out.push(fn);
     return out;
   }
   try {
@@ -148,7 +148,9 @@ export function measureNatural(node: TextNode): Metrics {
   }
   const prevW = node.width;
   const prevH = node.height;
-  let result: Metrics = { w: prevW, h: prevH };
+  // No initializer: the try either assigns or returns, so a starting value
+  // would only ever be dead.
+  let result: Metrics;
   try {
     node.textAutoResize = 'HEIGHT';
     result = { w: node.width, h: node.height };
@@ -186,7 +188,7 @@ export function availableFor(node: TextNode, root: SceneNode): Available {
 
   let cur: BaseNode | null = node.parent;
   while (cur && cur.type !== 'PAGE' && cur.type !== 'DOCUMENT') {
-    const n = cur as SceneNode;
+    const n = cur;
     const box = 'absoluteBoundingBox' in n ? n.absoluteBoundingBox : null;
     if (box) {
       const frame = n as FrameNode;
@@ -228,14 +230,22 @@ export function availableFor(node: TextNode, root: SceneNode): Available {
       let others = 0;
       for (const k of kids) if (k.id !== node.id) others += k.height;
       const inner =
-        frame.height - (frame.paddingTop || 0) - (frame.paddingBottom || 0) - others - spacing * gapCount;
+        frame.height -
+        (frame.paddingTop || 0) -
+        (frame.paddingBottom || 0) -
+        others -
+        spacing * gapCount;
       h = Math.min(h, inner);
     }
     if (frame.layoutMode === 'HORIZONTAL' && frame.primaryAxisSizingMode === 'FIXED') {
       let others = 0;
       for (const k of kids) if (k.id !== node.id) others += k.width;
       const inner =
-        frame.width - (frame.paddingLeft || 0) - (frame.paddingRight || 0) - others - spacing * gapCount;
+        frame.width -
+        (frame.paddingLeft || 0) -
+        (frame.paddingRight || 0) -
+        others -
+        spacing * gapCount;
       w = Math.min(w, inner);
     }
   }
@@ -247,7 +257,7 @@ export function availableFor(node: TextNode, root: SceneNode): Available {
 export function overflowOf(node: TextNode, avail: Available): { dh: number; dw: number } {
   const mode = node.textAutoResize;
   const nat = measureNatural(node);
-  let dh = -Infinity;
+  let dh: number;
   let dw = -Infinity;
 
   if (mode === 'NONE' || mode === 'TRUNCATE') {
@@ -315,7 +325,7 @@ export function capacityChars(node: TextNode, avail: Available): number | null {
 function nearestInstance(node: BaseNode): InstanceNode | null {
   let cur: BaseNode | null = node.parent;
   while (cur) {
-    if (cur.type === 'INSTANCE') return cur as InstanceNode;
+    if (cur.type === 'INSTANCE') return cur;
     cur = cur.parent;
   }
   return null;
@@ -367,7 +377,8 @@ function applySegmentStyle(node: TextNode, start: number, end: number, seg: any)
   if (typeof seg.indentation === 'number') {
     safe('indentation', () => node.setRangeIndentation(start, end, seg.indentation));
   }
-  if (seg.listOptions) safe('listOptions', () => node.setRangeListOptions(start, end, seg.listOptions));
+  if (seg.listOptions)
+    safe('listOptions', () => node.setRangeListOptions(start, end, seg.listOptions));
 }
 
 /**
@@ -386,9 +397,7 @@ export function setTextPreservingStyle(
   preserveFormatting: boolean
 ): ApplyMode {
   const refs = (node as any).componentPropertyReferences as
-    | { characters?: string }
-    | null
-    | undefined;
+    { characters?: string } | null | undefined;
   if (refs && refs.characters) {
     const inst = nearestInstance(node);
     if (inst) {
@@ -403,8 +412,13 @@ export function setTextPreservingStyle(
     }
   }
 
-  let segments: any[] = [];
+  let segments: any[];
   try {
+    /* The cast is load-bearing, whatever the linter believes: SEGMENT_FIELDS is
+       `as const` so the list stays readable, and the API wants a *mutable*
+       array of a union that changes between @figma/plugin-typings versions.
+       Removing it fails `npm run typecheck`, which is the authority here. */
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
     segments = node.getStyledTextSegments(SEGMENT_FIELDS as unknown as any) as any[];
   } catch (e) {
     swallow('setTextPreservingStyle: getStyledTextSegments', e);
@@ -491,7 +505,8 @@ function applyLetterSpacingDelta(node: TextNode, base: SizeSample[], deltaPercen
     let basePercent = 0;
     const ls = s.letterSpacing;
     if (ls && ls.unit === 'PERCENT') basePercent = ls.value;
-    else if (ls && ls.unit === 'PIXELS' && s.fontSize > 0) basePercent = (ls.value / s.fontSize) * 100;
+    else if (ls && ls.unit === 'PIXELS' && s.fontSize > 0)
+      basePercent = (ls.value / s.fontSize) * 100;
     try {
       node.setRangeLetterSpacing(s.start, s.end, {
         value: basePercent + deltaPercent,

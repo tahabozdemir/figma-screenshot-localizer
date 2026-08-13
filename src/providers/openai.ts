@@ -1,7 +1,19 @@
 import { LLM_POLICY, ResponseError, hasBudgets, httpError, missingKey, runChunks } from './base';
-import { buildShortenPrompt, buildSystemPrompt, buildUserPayload, NUDGE, parseTranslations } from './prompt';
+import {
+  buildShortenPrompt,
+  buildSystemPrompt,
+  buildUserPayload,
+  NUDGE,
+  parseTranslations,
+} from './prompt';
 import { parseJson, type Transport } from './transport';
-import type { ProviderContext, TranslateRequest, TranslateResult, TranslationProvider } from './types';
+import type {
+  ChunkPolicy,
+  ProviderContext,
+  TranslateRequest,
+  TranslateResult,
+  TranslationProvider,
+} from './types';
 
 export const OPENAI_URL = 'https://api.openai.com/v1/chat/completions';
 export const DEFAULT_OPENAI_MODEL = 'gpt-4o-mini';
@@ -19,13 +31,15 @@ export class OpenAIProvider implements TranslationProvider {
   readonly name = 'OpenAI';
 
   private readonly transport: Transport;
+  private readonly policy: ChunkPolicy;
   private readonly apiKey: string;
   private readonly model: string;
   /** Set by `modelRejectsTemperature`, or by a 400 that names the field. */
   private omitTemperature: boolean;
 
-  constructor(deps: { transport: Transport; apiKey: string; model: string }) {
+  constructor(deps: { transport: Transport; apiKey: string; model: string; policy?: ChunkPolicy }) {
     this.transport = deps.transport;
+    this.policy = deps.policy || LLM_POLICY;
     this.apiKey = deps.apiKey;
     this.model = deps.model || DEFAULT_OPENAI_MODEL;
     this.omitTemperature = modelRejectsTemperature(this.model);
@@ -45,7 +59,11 @@ export class OpenAIProvider implements TranslationProvider {
     return this.run(req, ctx, buildShortenPrompt(req.target, ctx.doNotTranslate, ctx.glossary));
   }
 
-  private run(req: TranslateRequest, ctx: ProviderContext, system: string): Promise<TranslateResult> {
+  private run(
+    req: TranslateRequest,
+    ctx: ProviderContext,
+    system: string
+  ): Promise<TranslateResult> {
     return runChunks(
       req,
       ctx,
@@ -74,7 +92,12 @@ export class OpenAIProvider implements TranslationProvider {
         };
 
         let res = await send(this.omitTemperature);
-        if (!res.ok && res.status === 400 && !this.omitTemperature && /temperature/i.test(res.body)) {
+        if (
+          !res.ok &&
+          res.status === 400 &&
+          !this.omitTemperature &&
+          /temperature/i.test(res.body)
+        ) {
           // The model id is newer than this list — remember it for the rest of the run.
           this.omitTemperature = true;
           res = await send(true);
@@ -92,7 +115,7 @@ export class OpenAIProvider implements TranslationProvider {
         return parseTranslations(content, items);
       },
       this.apiKey,
-      LLM_POLICY
+      this.policy
     );
   }
 }

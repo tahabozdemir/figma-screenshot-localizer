@@ -2,7 +2,13 @@ import { DEEPL_POLICY, ResponseError, httpError, runChunks } from './base';
 import { deeplSource, deeplTarget } from '../shared/languages';
 import { markProtected, unmarkProtected } from './protect';
 import { parseJson, type Transport } from './transport';
-import type { ProviderContext, TranslateRequest, TranslateResult, TranslationProvider } from './types';
+import type {
+  ChunkPolicy,
+  ProviderContext,
+  TranslateRequest,
+  TranslateResult,
+  TranslationProvider,
+} from './types';
 
 export const DEEPL_PRO_URL = 'https://api.deepl.com/v2/translate';
 export const DEEPL_FREE_URL = 'https://api-free.deepl.com/v2/translate';
@@ -17,11 +23,18 @@ export class DeepLProvider implements TranslationProvider {
   readonly name: string;
 
   private readonly transport: Transport;
+  private readonly policy: ChunkPolicy;
   private readonly apiKey: string;
   private readonly freeTier: boolean;
 
-  constructor(deps: { transport: Transport; apiKey: string; freeTier: boolean }) {
+  constructor(deps: {
+    transport: Transport;
+    apiKey: string;
+    freeTier: boolean;
+    policy?: ChunkPolicy;
+  }) {
     this.transport = deps.transport;
+    this.policy = deps.policy || DEEPL_POLICY;
     this.apiKey = deps.apiKey;
     this.freeTier = deps.freeTier;
     this.id = deps.freeTier ? 'deepl-free' : 'deepl';
@@ -97,7 +110,7 @@ export class DeepLProvider implements TranslationProvider {
         return out;
       },
       this.apiKey,
-      DEEPL_POLICY
+      this.policy
     );
 
     for (const note of notes) result.issues.push(note);

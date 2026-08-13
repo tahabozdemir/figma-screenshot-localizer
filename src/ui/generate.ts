@@ -6,7 +6,7 @@
  * the sandbox in the config instead of being re-derived over there.
  */
 
-import { getProvider, missingCredential } from '../providers/registry';
+import { createProvider, getProvider, missingCredential } from '../providers/registry';
 import type { PluginToUi } from '../shared/messages';
 import type { GenerateConfig } from '../shared/types';
 import { $ } from './dom';
@@ -75,8 +75,7 @@ export function cancelGeneration(): void {
 type TranslateRequest = Extract<PluginToUi, { type: 'translate-request' }>;
 
 export async function handleTranslateRequest(msg: TranslateRequest): Promise<void> {
-  const descriptor = getProvider(state.settings.mode);
-  const provider = descriptor.create({ ...state, transport: httpRequest });
+  const provider = createProvider(state.settings.mode, { ...state, transport: httpRequest });
 
   const label = msg.shorten
     ? 'Shortening ' + msg.target.name + ' strings that overflow…'

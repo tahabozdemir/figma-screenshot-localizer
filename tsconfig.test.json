@@ -1,0 +1,10 @@
+{
+  "//": "Covers the test barrel, which imports from BOTH threads and therefore fits in neither project. It exists only so a type error in test/entry.ts is a build failure rather than an invisible one.",
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "typeRoots": ["./node_modules/@types", "./node_modules/@figma"],
+    "types": ["plugin-typings"]
+  },
+  "include": ["test/entry.ts"]
+}

@@ -19,6 +19,7 @@ const {
   CancellationToken,
   langByCode,
   tmKey,
+  PREFETCH_LANGUAGES,
 } = await import('../dist-test/lib.mjs');
 
 let nextId = 0;
@@ -79,7 +80,12 @@ function frameNode(name, children, opts = {}) {
         if (at >= 0) siblings.splice(at, 1);
       }
     },
-    clone: () => frameNode(name, node.children.map((c) => c.clone()), opts),
+    clone: () =>
+      frameNode(
+        name,
+        node.children.map((c) => c.clone()),
+        opts
+      ),
   };
   for (const child of children) child.parent = node;
   return node;
@@ -199,16 +205,19 @@ test('a frame is cloned per language, renamed, and its text replaced', async () 
   assert.equal(outcome.summary.languages, 2);
 
   const created = doc.page.filter((n) => n !== source);
-  assert.deepEqual(created.map((n) => n.name), ['01_Hero_DE', '01_Hero_FR']);
+  assert.deepEqual(
+    created.map((n) => n.name),
+    ['01_Hero_DE', '01_Hero_FR']
+  );
   assert.deepEqual(
     created[0].children.map((c) => c.characters),
     ['DE:Track your habits', 'DE:Every single day']
   );
   // The source is never touched.
-  assert.deepEqual(source.children.map((c) => c.characters), [
-    'Track your habits',
-    'Every single day',
-  ]);
+  assert.deepEqual(
+    source.children.map((c) => c.characters),
+    ['Track your habits', 'Every single day']
+  );
   assert.equal(source.name, '01_Hero_EN');
 });
 
@@ -423,8 +432,53 @@ test('an empty or text-free selection is refused before anything is cloned', asy
   assert.match(noTargets.outcome.message, /target language/);
 });
 
+test('languages are resolved ahead of the drawing loop, but only so far ahead', async () => {
+  const source = frameNode('Hero', [textNode('t', 'One')]);
+  let inFlight = 0;
+  let peak = 0;
+  const request = async (from, to, strings) => {
+    inFlight++;
+    peak = Math.max(peak, inFlight);
+    await new Promise((r) => setTimeout(r, 5));
+    inFlight--;
+    const translations = {};
+    for (const s of strings) translations[s.id] = to.code + ':' + s.text;
+    return { translations };
+  };
+
+  const { outcome } = await run(
+    fakeDoc([source]),
+    { targets: ['DE', 'FR', 'ES', 'IT', 'PT'] },
+    { request }
+  );
+
+  assert.equal(outcome.status, 'done');
+  assert.equal(outcome.summary.framesCreated, 5);
+  assert.equal(peak, PREFETCH_LANGUAGES, 'the prefetch queue should stay exactly this deep');
+  assert.ok(PREFETCH_LANGUAGES > 1, 'depth 1 serialises every round-trip behind the drawing');
+});
+
+test('a prefetch that fails does not become an unhandled rejection', async () => {
+  const source = frameNode('Hero', [textNode('t', 'One')]);
+  const request = async (from, to, strings) => {
+    if (to.code !== 'DE') throw new Error('provider exploded');
+    const translations = {};
+    for (const s of strings) translations[s.id] = to.code + ':' + s.text;
+    return { translations };
+  };
+
+  const { outcome } = await run(fakeDoc([source]), { targets: ['DE', 'FR', 'ES'] }, { request });
+
+  assert.equal(outcome.status, 'done');
+  assert.equal(outcome.summary.framesCreated, 1);
+  assert.equal(codes(outcome).filter((c) => c === 'language-skipped').length, 2);
+});
+
 test('progress is reported per language and per frame', async () => {
-  const doc = fakeDoc([frameNode('A', [textNode('t', 'One')]), frameNode('B', [textNode('t', 'Two')])]);
+  const doc = fakeDoc([
+    frameNode('A', [textNode('t', 'One')]),
+    frameNode('B', [textNode('t', 'Two')]),
+  ]);
   const { progress } = await run(doc, { targets: ['DE', 'FR'] });
   const last = progress[progress.length - 1];
   assert.equal(last.langIndex, 2);
@@ -465,6 +519,9 @@ test('a layer whose id maps to different source text is skipped, not mistranslat
 
   assert.equal(written, 0);
   assert.equal(node.characters, 'Track your habits', 'the wrong translation must not be written');
-  assert.deepEqual(warnings.map((w) => w.detail.code), ['hash-collision']);
+  assert.deepEqual(
+    warnings.map((w) => w.detail.code),
+    ['hash-collision']
+  );
   assert.equal(warnings[0].severity, 'error');
 });

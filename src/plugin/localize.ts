@@ -167,7 +167,10 @@ export async function localizeFrame(
         ctx,
         root.name,
         layerName,
-        { code: 'font-unavailable', font: badFont ? badFont.family + ' ' + badFont.style : undefined },
+        {
+          code: 'font-unavailable',
+          font: badFont ? badFont.family + ' ' + badFont.style : undefined,
+        },
         'error',
         node.id
       );
@@ -255,7 +258,14 @@ export async function localizeFrame(
         }
       }
       if (options.detectOverflow) {
-        warn(ctx, root.name, layerName, overflowDetail(fit, growth, options.autoAdjust, false), 'warn', node.id);
+        warn(
+          ctx,
+          root.name,
+          layerName,
+          overflowDetail(fit, growth, options.autoAdjust, false),
+          'warn',
+          node.id
+        );
       }
     } else if (options.detectOverflow && fit.fontScale < 0.999) {
       warn(
@@ -387,7 +397,14 @@ export async function runFitPass(
     if (fit.fits) {
       rescued++;
       if (applied && ctx.options.detectOverflow) {
-        warn(ctx, item.frame, item.layer, { code: 'shortened', text: shorter }, 'info', item.node.id);
+        warn(
+          ctx,
+          item.frame,
+          item.layer,
+          { code: 'shortened', text: shorter },
+          'info',
+          item.node.id
+        );
       }
     } else if (ctx.options.detectOverflow) {
       warn(

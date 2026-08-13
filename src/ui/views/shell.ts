@@ -51,7 +51,11 @@ export function renderDone(summary: GenerateSummary): void {
       summary.layersTranslated,
       'text layers written',
       summary.cacheHits
-        ? el('span', {}, [' · ', el('b', { text: String(summary.cacheHits) }), ' reused from cache'])
+        ? el('span', {}, [
+            ' · ',
+            el('b', { text: String(summary.cacheHits) }),
+            ' reused from cache',
+          ])
         : null
     ),
     summary.shortened ? stat(summary.shortened, 'shortened by the model to fit') : null,

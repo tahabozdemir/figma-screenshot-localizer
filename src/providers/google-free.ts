@@ -1,7 +1,13 @@
 import { GOOGLE_FREE_POLICY, ResponseError, httpError, runChunks } from './base';
 import { googleCode } from '../shared/languages';
 import { parseJson, type Transport } from './transport';
-import type { ProviderContext, TranslateRequest, TranslateResult, TranslationProvider } from './types';
+import type {
+  ChunkPolicy,
+  ProviderContext,
+  TranslateRequest,
+  TranslateResult,
+  TranslationProvider,
+} from './types';
 
 export const GOOGLE_FREE_URL = 'https://translate.googleapis.com/translate_a/single';
 
@@ -18,9 +24,11 @@ export class GoogleFreeProvider implements TranslationProvider {
   readonly name = 'Google Translate (free)';
 
   private readonly transport: Transport;
+  private readonly policy: ChunkPolicy;
 
-  constructor(deps: { transport: Transport }) {
+  constructor(deps: { transport: Transport; policy?: ChunkPolicy }) {
     this.transport = deps.transport;
+    this.policy = deps.policy || GOOGLE_FREE_POLICY;
   }
 
   async translate(req: TranslateRequest, ctx: ProviderContext): Promise<TranslateResult> {
@@ -74,7 +82,7 @@ export class GoogleFreeProvider implements TranslationProvider {
         return out;
       },
       '',
-      GOOGLE_FREE_POLICY
+      this.policy
     );
   }
 }

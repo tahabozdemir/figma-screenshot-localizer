@@ -22,6 +22,12 @@ import {
   HttpError,
   TransportError,
   isFreeKey,
+  createProvider,
+  PROVIDERS,
+  PROVIDER_LIST,
+  GOOGLE_POLICY,
+  DEFAULT_SETTINGS,
+  DEFAULT_SECRETS,
 } from '../dist-test/lib.mjs';
 
 const EN = langByCode('EN');
@@ -30,7 +36,13 @@ const DE = langByCode('DE');
 const ctx = { doNotTranslate: [] };
 
 function ok(body, headers = {}) {
-  return { ok: true, status: 200, statusText: 'OK', headers, body: typeof body === 'string' ? body : JSON.stringify(body) };
+  return {
+    ok: true,
+    status: 200,
+    statusText: 'OK',
+    headers,
+    body: typeof body === 'string' ? body : JSON.stringify(body),
+  };
 }
 
 function fail(status, body = '', headers = {}) {
@@ -56,7 +68,8 @@ function scripted(...replies) {
   return transport;
 }
 
-const chat = (translations) => ok({ choices: [{ message: { content: JSON.stringify({ translations }) } }] });
+const chat = (translations) =>
+  ok({ choices: [{ message: { content: JSON.stringify({ translations }) } }] });
 
 const strings = (n, length = 10) =>
   Array.from({ length: n }, (_, i) => ({ id: 'id' + i, text: 'x'.repeat(length), count: 1 }));
@@ -96,19 +109,32 @@ test('OpenAI drops temperature once the model rejects it, and remembers', async 
   );
   const provider = new OpenAIProvider({ transport, apiKey: 'sk-x', model: 'some-new-model' });
 
-  await provider.translate({ source: EN, target: DE, strings: [{ id: 'a', text: 'One', count: 1 }] }, ctx);
-  await provider.translate({ source: EN, target: DE, strings: [{ id: 'b', text: 'Two', count: 1 }] }, ctx);
+  await provider.translate(
+    { source: EN, target: DE, strings: [{ id: 'a', text: 'One', count: 1 }] },
+    ctx
+  );
+  await provider.translate(
+    { source: EN, target: DE, strings: [{ id: 'b', text: 'Two', count: 1 }] },
+    ctx
+  );
 
   const bodies = transport.calls.map((c) => JSON.parse(c.body));
   assert.equal(bodies[0].temperature, 0.2);
   assert.equal(bodies[1].temperature, undefined);
-  assert.equal(bodies[2].temperature, undefined, 'the second run must not repeat the rejected attempt');
+  assert.equal(
+    bodies[2].temperature,
+    undefined,
+    'the second run must not repeat the rejected attempt'
+  );
 });
 
 test('reasoning models omit temperature from the very first request', async () => {
   const transport = scripted(chat({ a: 'Eins' }));
   const provider = new OpenAIProvider({ transport, apiKey: 'sk-x', model: 'gpt-5' });
-  await provider.translate({ source: EN, target: DE, strings: [{ id: 'a', text: 'One', count: 1 }] }, ctx);
+  await provider.translate(
+    { source: EN, target: DE, strings: [{ id: 'a', text: 'One', count: 1 }] },
+    ctx
+  );
   assert.equal(JSON.parse(transport.calls[0].body).temperature, undefined);
 });
 
@@ -126,12 +152,21 @@ test('a model that answers with prose gets exactly one nudge', async () => {
 
   assert.deepEqual(result.translations, { a: 'Eins' });
   assert.equal(transport.calls.length, 2);
-  assert.ok(transport.calls[1].body.indexOf('not valid JSON') > 0, 'the retry should carry the nudge');
+  assert.ok(
+    transport.calls[1].body.indexOf('not valid JSON') > 0,
+    'the retry should carry the nudge'
+  );
 });
 
 test('a bad key fails immediately and the message is redacted', async () => {
-  const transport = scripted(fail(401, { error: { message: 'Incorrect API key sk-secret-key-123' } }));
-  const provider = new OpenAIProvider({ transport, apiKey: 'sk-secret-key-123', model: 'gpt-4o-mini' });
+  const transport = scripted(
+    fail(401, { error: { message: 'Incorrect API key sk-secret-key-123' } })
+  );
+  const provider = new OpenAIProvider({
+    transport,
+    apiKey: 'sk-secret-key-123',
+    model: 'gpt-4o-mini',
+  });
 
   const result = await provider.translate(
     { source: EN, target: DE, strings: [{ id: 'a', text: 'One', count: 1 }] },
@@ -169,7 +204,11 @@ test('Gemini puts the key in a header and the model in the path', async () => {
   const transport = scripted(
     ok({ candidates: [{ content: { parts: [{ text: '{"translations":{"a":"Eins"}}' }] } }] })
   );
-  const provider = new GeminiProvider({ transport, apiKey: 'AIza-secret', model: 'gemini-2.0-flash' });
+  const provider = new GeminiProvider({
+    transport,
+    apiKey: 'AIza-secret',
+    model: 'gemini-2.0-flash',
+  });
 
   const result = await provider.translate(
     { source: EN, target: DE, strings: [{ id: 'a', text: 'One', count: 1 }] },
@@ -194,7 +233,11 @@ test('a blocked Gemini response explains itself and is not retried', async () =>
   const result = await provider.translate({ source: EN, target: DE, strings: strings(1) }, ctx);
 
   assert.match(result.error, /SAFETY/);
-  assert.equal(transport.calls.length, 1, 'an unusable answer is deterministic — asking again cannot help');
+  assert.equal(
+    transport.calls.length,
+    1,
+    'an unusable answer is deterministic — asking again cannot help'
+  );
 });
 
 /* ------------------------------------------------------------------ */
@@ -208,13 +251,21 @@ test('Google marks placeholders untranslatable and unwraps the result', async ()
     assert.ok(sent.q[0].indexOf('<span translate="no">{{name}}</span>') >= 0);
     assert.ok(sent.q[0].indexOf('<span translate="no">HabitFlow</span>') >= 0);
     return ok({
-      data: { translations: [{ translatedText: 'Hallo <span translate="no">{{name}}</span>, HabitFlow &amp; co' }] },
+      data: {
+        translations: [
+          { translatedText: 'Hallo <span translate="no">{{name}}</span>, HabitFlow &amp; co' },
+        ],
+      },
     });
   });
   const provider = new GoogleTranslateProvider({ transport, apiKey: 'AIza' });
 
   const result = await provider.translate(
-    { source: EN, target: DE, strings: [{ id: 'a', text: 'Hi {{name}}, HabitFlow & co', count: 1 }] },
+    {
+      source: EN,
+      target: DE,
+      strings: [{ id: 'a', text: 'Hi {{name}}, HabitFlow & co', count: 1 }],
+    },
     { doNotTranslate: ['HabitFlow'] }
   );
 
@@ -281,10 +332,7 @@ test('DeepL always goes through the sandbox bridge, and reports a spent quota', 
 test('DeepL uses the documented language variants', async () => {
   const transport = scripted(ok({ translations: [{ text: '一' }] }));
   const provider = new DeepLProvider({ transport, apiKey: 'abc-123', freeTier: false });
-  await provider.translate(
-    { source: EN, target: langByCode('ZH-CN'), strings: strings(1) },
-    ctx
-  );
+  await provider.translate({ source: EN, target: langByCode('ZH-CN'), strings: strings(1) }, ctx);
   const sent = JSON.parse(transport.calls[0].body);
   assert.equal(sent.source_lang, 'EN');
   assert.equal(sent.target_lang, 'ZH-HANS');
@@ -313,6 +361,47 @@ test('manual reports how many strings are still untranslated', async () => {
 });
 
 /* ------------------------------------------------------------------ */
+/* Batching policy comes from the registry                             */
+/* ------------------------------------------------------------------ */
+
+test('createProvider hands each provider the policy its descriptor declares', async () => {
+  const base = {
+    settings: DEFAULT_SETTINGS,
+    secrets: { ...DEFAULT_SECRETS, googleKey: 'AIza' },
+    manual: {},
+  };
+  let calls = 0;
+  const transport = async () => {
+    calls++;
+    return ok({
+      data: { translations: Array.from({ length: 64 }, () => ({ translatedText: 'x' })) },
+    });
+  };
+
+  const provider = createProvider('google', { ...base, transport });
+  await provider.translate({ source: EN, target: DE, strings: strings(65) }, ctx);
+
+  // GOOGLE_POLICY caps a batch at 64 items, so 65 strings is exactly two
+  // requests. If the descriptor's policy were not reaching the provider, the
+  // default would still be in play and this number would not track it.
+  assert.equal(calls, 2);
+  assert.equal(PROVIDERS.google.policy, GOOGLE_POLICY);
+});
+
+test('every provider that talks to the network declares a sane policy', () => {
+  for (const descriptor of PROVIDER_LIST) {
+    if (!descriptor.domains.length) continue;
+    const { maxItems, maxChars, concurrency } = descriptor.policy;
+    assert.ok(maxItems >= 1, descriptor.id + ' would send empty batches');
+    assert.ok(maxChars >= 1000, descriptor.id + ' would split on almost every string');
+    assert.ok(concurrency >= 1, descriptor.id + ' would never issue a request');
+    // Concurrency multiplies with the pipeline's language prefetch; past this
+    // a free tier starts answering 429 more often than it answers.
+    assert.ok(concurrency <= 4, descriptor.id + ' is too aggressive for a free tier');
+  }
+});
+
+/* ------------------------------------------------------------------ */
 /* Retry policy                                                        */
 /* ------------------------------------------------------------------ */
 
@@ -330,10 +419,14 @@ test('rate limits and server errors are retried, client errors are not', async (
 
   calls = 0;
   await assert.rejects(() =>
-    withRetry(async () => {
-      calls++;
-      throw new HttpError(401, 'bad key', 0);
-    }, undefined, noWait)
+    withRetry(
+      async () => {
+        calls++;
+        throw new HttpError(401, 'bad key', 0);
+      },
+      undefined,
+      noWait
+    )
   );
   assert.equal(calls, 1, '401 is final');
 });
@@ -341,10 +434,14 @@ test('rate limits and server errors are retried, client errors are not', async (
 test('retrying gives up after three attempts', async () => {
   let calls = 0;
   await assert.rejects(() =>
-    withRetry(async () => {
-      calls++;
-      throw new HttpError(500, 'boom', 0);
-    }, undefined, noWait)
+    withRetry(
+      async () => {
+        calls++;
+        throw new HttpError(500, 'boom', 0);
+      },
+      undefined,
+      noWait
+    )
   );
   assert.equal(calls, 3);
 });
@@ -352,10 +449,14 @@ test('retrying gives up after three attempts', async () => {
 test('a transport that declares itself unrecoverable is not retried', async () => {
   let calls = 0;
   await assert.rejects(() =>
-    withRetry(async () => {
-      calls++;
-      throw new TransportError('no fetch in this build', false);
-    }, undefined, noWait)
+    withRetry(
+      async () => {
+        calls++;
+        throw new TransportError('no fetch in this build', false);
+      },
+      undefined,
+      noWait
+    )
   );
   assert.equal(calls, 1);
 });

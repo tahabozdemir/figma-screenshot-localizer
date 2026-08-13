@@ -79,7 +79,11 @@ test('every keyed provider declares exactly one credential field', () => {
     const credentials = descriptor.fields.filter((f) => f.credential);
     assert.ok(credentials.length <= 1, descriptor.id + ' has more than one credential field');
     if (descriptor.domains.length && descriptor.id !== 'google-free') {
-      assert.equal(credentials.length, 1, descriptor.id + ' talks to the network without a key field');
+      assert.equal(
+        credentials.length,
+        1,
+        descriptor.id + ' talks to the network without a key field'
+      );
     }
   }
 });
@@ -99,7 +103,10 @@ test('secrets never live in the settings blob', () => {
 
 test('missingCredential reports the empty key and clears once it is filled', () => {
   assert.ok(missingCredential(PROVIDERS.openai, stateWith()));
-  assert.equal(missingCredential(PROVIDERS.openai, stateWith({ secrets: { openaiKey: 'sk-x' } })), null);
+  assert.equal(
+    missingCredential(PROVIDERS.openai, stateWith({ secrets: { openaiKey: 'sk-x' } })),
+    null
+  );
   // Whitespace is not a key.
   assert.ok(missingCredential(PROVIDERS.openai, stateWith({ secrets: { openaiKey: '   ' } })));
   assert.equal(missingCredential(PROVIDERS['google-free'], stateWith()), null);
@@ -112,7 +119,13 @@ test('manual refuses to run until at least one language has entries', () => {
 });
 
 test('a provider can be constructed from its descriptor alone', () => {
-  const transport = async () => ({ ok: true, status: 200, statusText: '', headers: {}, body: '{}' });
+  const transport = async () => ({
+    ok: true,
+    status: 200,
+    statusText: '',
+    headers: {},
+    body: '{}',
+  });
   for (const descriptor of PROVIDER_LIST) {
     const provider = descriptor.create({ ...stateWith(), transport });
     assert.equal(typeof provider.translate, 'function');
