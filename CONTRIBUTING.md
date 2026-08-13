@@ -66,7 +66,7 @@ message is validated on arrival. If you add a message, add it to the union _and_
 ## Adding a translation provider
 
 This is the most common change and it is designed to be small — one new file plus one descriptor.
-See [Adding a translation provider](README.md#adding-a-translation-provider) in the README.
+See [Adding a translation provider](docs/providers.md#adding-a-translation-provider) in the README.
 
 ## Pull requests
 
