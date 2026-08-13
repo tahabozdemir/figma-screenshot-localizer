@@ -1,0 +1,39 @@
+name: Feature request
+description: Something the plugin should be able to do
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What are you trying to do
+      description: >
+        The workflow, not the feature. "I ship 8 screenshots × 12 languages and hand-fixing the
+        German ones takes an afternoon" tells us far more than "add a batch mode".
+    validations:
+      required: true
+
+  - type: textarea
+    id: idea
+    attributes:
+      label: What you have in mind
+      description: Optional — a rough shape is fine, and so is "no idea, you decide".
+
+  - type: dropdown
+    id: kind
+    attributes:
+      label: Roughly what kind of change is this
+      options:
+        - A new translation provider
+        - A new language
+        - Layout / fitting behaviour
+        - The panel itself
+        - Something else
+    validations:
+      required: true
+
+  - type: markdown
+    attributes:
+      value: |
+        **A new provider or a new language is a small, well-isolated change** — a provider is one
+        file plus one descriptor, and a language is one object. Both are documented in the README,
+        and both make good first pull requests if you fancy it.

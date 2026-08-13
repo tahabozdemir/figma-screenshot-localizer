@@ -1,0 +1,19 @@
+node_modules/
+
+# Build output. manifest.json points at dist/, so a fresh clone must run
+# `npm install && npm run build` before importing the plugin into Figma.
+dist/
+dist-test/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# Logs and local scratch
+*.log
+npm-debug.log*
+.env
+.env.local

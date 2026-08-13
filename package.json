@@ -1,0 +1,37 @@
+{
+  "name": "figma-screenshot-localizer",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Figma plugin that duplicates your App Store / Google Play screenshot frames and translates the text into 21 languages \u2014 locally, with your own API key or by hand.",
+  "license": "MIT",
+  "author": "Taha Bozdemir",
+  "keywords": [
+    "figma",
+    "figma-plugin",
+    "localization",
+    "i18n",
+    "translation",
+    "screenshots",
+    "app-store",
+    "google-play",
+    "aso",
+    "deepl",
+    "openai",
+    "gemini"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "npm run typecheck && node build.mjs",
+    "watch": "node build.mjs --watch",
+    "typecheck": "tsc -p tsconfig.json && tsc -p tsconfig.ui.json",
+    "test": "node build.mjs --test && node --test \"test/*.test.mjs\"",
+    "clean": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true});require('node:fs').rmSync('dist-test',{recursive:true,force:true})\""
+  },
+  "devDependencies": {
+    "@figma/plugin-typings": "^1.100.2",
+    "esbuild": "^0.24.0",
+    "typescript": "^5.6.3"
+  }
+}

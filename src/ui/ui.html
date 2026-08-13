@@ -1,0 +1,180 @@
+<!-- Source template. `npm run build` inlines styles.css and the bundled UI into dist/ui.html.
+     Provider panels are NOT here: they are generated from providers/registry.ts at runtime. -->
+<meta charset="utf-8" />
+<!--INJECT_CSS-->
+
+<header>
+  <h1>Screenshot Localizer</h1>
+  <span class="badge" title="No backend, no telemetry, no accounts.">Local only</span>
+</header>
+
+<!-- =============================== MAIN =============================== -->
+<main id="view-main" class="view active">
+  <section>
+    <div class="sec-head">
+      <h2>Selected frames</h2>
+      <button id="refresh" class="ghost">Refresh selection</button>
+    </div>
+    <div id="selection-summary" class="summary empty">No frames selected</div>
+    <div id="frame-list" class="chips"></div>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <h2>Languages</h2>
+      <span id="lang-count" class="muted">0 selected</span>
+    </div>
+    <div class="row">
+      <label class="field">
+        <span>Source language</span>
+        <select id="source-lang"></select>
+      </label>
+    </div>
+    <div class="row gap">
+      <input id="lang-search" type="search" placeholder="Search languages…" autocomplete="off" />
+    </div>
+    <div id="lang-list" class="lang-list"></div>
+    <div class="row gap">
+      <button id="lang-all" class="link">Select all</button>
+      <span class="muted">·</span>
+      <button id="lang-none" class="link">Clear</button>
+    </div>
+  </section>
+
+  <section>
+    <h2>Translation mode</h2>
+    <select id="mode" class="mode-select"></select>
+    <div id="mode-panels"></div>
+    <p class="note" id="privacy-note"></p>
+  </section>
+
+  <section>
+    <h2>Options</h2>
+    <label class="check">
+      <input type="checkbox" id="opt-group" />
+      <span>Create one folder/frame per language</span>
+    </label>
+    <label class="check">
+      <input type="checkbox" id="opt-keep" />
+      <span
+        >Keep original frames unchanged
+        <em>When off, the sources are renamed with the source-language tag. They are never deleted.</em></span
+      >
+    </label>
+    <label class="check">
+      <input type="checkbox" id="opt-adjust" />
+      <span
+        >Auto-adjust text when translation is longer
+        <em>Font size 85–105% and slight letter-spacing only.</em></span
+      >
+    </label>
+    <label class="check">
+      <input type="checkbox" id="opt-overflow" />
+      <span>Detect text overflow</span>
+    </label>
+    <label class="check">
+      <input type="checkbox" id="opt-format" />
+      <span
+        >Preserve original text formatting
+        <em>Re-applies mixed character styles proportionally.</em></span
+      >
+    </label>
+    <label class="check">
+      <input type="checkbox" id="opt-suffix" />
+      <span>Add language suffix to frame names <em>Hero_DE — off gives [DE] Hero.</em></span>
+    </label>
+    <label class="check">
+      <input type="checkbox" id="opt-fit" />
+      <span
+        >Let the AI fit the copy to the layout
+        <em
+          >AI modes only. Sends each string the character budget its box actually has, then asks for
+          a shorter wording for whatever still overflows.</em
+        ></span
+      >
+    </label>
+    <label class="check">
+      <input type="checkbox" id="opt-update" />
+      <span
+        >Update frames from an earlier run
+        <em
+          >Replaces a frame of the same name in place instead of adding another column. The old frame
+          is deleted.</em
+        ></span
+      >
+    </label>
+
+    <div class="row gap">
+      <label class="field">
+        <span>Never translate (comma separated)</span>
+        <input id="dnt" type="text" placeholder="HabitFlow, Apple Health" autocomplete="off" />
+      </label>
+    </div>
+
+    <div class="row gap">
+      <label class="field">
+        <span>Glossary — one term per line (AI modes)</span>
+        <textarea id="glossary" rows="3" spellcheck="false" placeholder="Streak = TR: Seri, DE: Serie"></textarea>
+      </label>
+    </div>
+    <p class="note" id="glossary-state"></p>
+  </section>
+
+  <section>
+    <div class="row between">
+      <span class="muted">Translation memory is cached locally per language pair.</span>
+      <button id="clear-cache" class="link danger">Clear</button>
+    </div>
+    <label class="check">
+      <input type="checkbox" id="opt-debug" />
+      <span
+        >Debug logging
+        <em>Logs the errors the plugin normally ignores to the developer console. Useful in a bug report.</em></span
+      >
+    </label>
+  </section>
+</main>
+
+<!-- ============================= PROGRESS ============================= -->
+<div id="view-progress" class="view center">
+  <div class="spinner"></div>
+  <h3>Generating…</h3>
+  <p id="progress-label" class="muted">Preparing</p>
+  <div class="bar"><div id="progress-bar"></div></div>
+  <p id="progress-detail" class="muted"></p>
+  <button id="cancel" class="ghost">Cancel</button>
+</div>
+
+<!-- =============================== DONE ============================== -->
+<div id="view-done" class="view center">
+  <div class="done-check">✓</div>
+  <h3 id="done-title">Localization complete</h3>
+  <ul class="stats" id="done-stats"></ul>
+  <div class="row">
+    <button id="done-warnings" class="ghost">View warnings</button>
+    <button id="done-back" class="ghost">Back</button>
+    <button id="done-close" class="ghost">Close</button>
+  </div>
+</div>
+
+<!-- ============================ WARNINGS ============================= -->
+<div id="view-warnings" class="view">
+  <div class="warn-head">
+    <strong id="warn-title">Warnings</strong>
+    <button id="warn-back" class="ghost">Back</button>
+  </div>
+  <div id="warn-list"></div>
+</div>
+
+<footer id="footer">
+  <p id="form-error" class="inline-error hidden"></p>
+  <button id="generate" class="primary">Generate Localized Screenshots</button>
+</footer>
+
+<div id="resize-grip" title="Drag to resize">
+  <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true">
+    <path d="M9 1v8H1" fill="none" stroke="currentColor" stroke-width="1.4" />
+  </svg>
+</div>
+
+<!--INJECT_JS-->

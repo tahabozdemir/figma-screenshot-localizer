@@ -1,0 +1,22 @@
+{
+  "name": "Screenshot Localizer",
+  "id": "screenshot-localizer-dev",
+  "api": "1.0.0",
+  "main": "dist/code.js",
+  "ui": "dist/ui.html",
+  "editorType": ["figma"],
+  "documentAccess": "dynamic-page",
+  "capabilities": [],
+  "enableProposedApi": false,
+  "networkAccess": {
+    "allowedDomains": [
+      "https://api.openai.com",
+      "https://generativelanguage.googleapis.com",
+      "https://translation.googleapis.com",
+      "https://translate.googleapis.com",
+      "https://api.deepl.com",
+      "https://api-free.deepl.com"
+    ],
+    "reasoning": "Only used to send the selected text strings to the translation provider that you explicitly choose (OpenAI, Gemini, Google Translate or DeepL) with your own API key. Manual mode makes no network requests at all."
+  }
+}

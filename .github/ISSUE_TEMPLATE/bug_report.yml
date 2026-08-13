@@ -1,0 +1,81 @@
+name: Bug report
+description: Something the plugin got wrong
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Before filing: turn on **Debug logging** at the bottom of the plugin panel, reproduce the
+        problem, then open the Figma developer console (*Plugins → Development → Open console*) and
+        copy what it printed. It logs exactly the failures the plugin normally ignores, which is
+        usually the missing half of a bug report.
+
+        If the bug involves API keys or network access, please read
+        [SECURITY.md](../blob/main/SECURITY.md) first and report it privately instead.
+
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: And what you expected instead.
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Select a frame with …
+        2. Pick DeepL, target German
+        3. Press Generate
+        4. …
+    validations:
+      required: true
+
+  - type: dropdown
+    id: mode
+    attributes:
+      label: Translation mode
+      options:
+        - Manual
+        - OpenAI
+        - Gemini
+        - Google Translate (Cloud API key)
+        - Google Translate (free)
+        - DeepL (Pro API)
+        - DeepL (Free API)
+        - Several / not sure
+    validations:
+      required: true
+
+  - type: textarea
+    id: warnings
+    attributes:
+      label: Warning list
+      description: The entries from the plugin's warning screen, if any.
+      render: text
+
+  - type: textarea
+    id: console
+    attributes:
+      label: Debug console output
+      description: With Debug logging on. Please remove anything that looks like an API key.
+      render: text
+
+  - type: textarea
+    id: layer
+    attributes:
+      label: What the layer looks like
+      description: >
+        Most of the interesting failures depend on the layer: fixed size vs auto-height, inside an
+        auto-layout frame, inside a component instance, mixed character styling, a font that is not
+        in the file. A screenshot of the right-hand panel for that layer is ideal.
+
+  - type: input
+    id: figma
+    attributes:
+      label: Figma version and OS
+      placeholder: Figma desktop 124.5.3, macOS 15.2
+    validations:
+      required: true

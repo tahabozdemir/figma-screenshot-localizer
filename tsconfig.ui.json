@@ -1,0 +1,9 @@
+{
+  "//": "UI-iframe project: src/ui/**, src/providers/** and the shared layer. Browser globals, and deliberately NO @figma/plugin-typings — those declare a sandbox-flavoured global fetch that conflicts with the DOM one.",
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "types": []
+  },
+  "include": ["src/ui/**/*.ts", "src/providers/**/*.ts", "src/shared/**/*.ts"]
+}
