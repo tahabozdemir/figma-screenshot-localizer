@@ -18,6 +18,13 @@ Everything runs locally inside Figma. There is no backend, no account, no teleme
 The only network requests the plugin can make are to the translation provider you pick, with your own
 API key — and Manual mode makes none at all.
 
+<p align="center">
+  <img src="docs/images/panel-languages.png" width="46%" alt="The plugin panel: selected frames, a searchable list of 21 target languages, and the translation mode picker">
+  <img src="docs/images/panel-options.png" width="46%" alt="The options section: layout and naming switches, the never-translate list, the glossary field and the debug logging toggle">
+</p>
+
+<p align="center"><em>Pick your languages and a mode, then tune how it handles your layout.</em></p>
+
 ---
 
 ## Setup
@@ -35,13 +42,13 @@ Then in Figma (desktop app):
 
 Other scripts:
 
-| Command             | What it does                                                |
-| ------------------- | ----------------------------------------------------------- |
-| `npm run build`     | Type-checks both projects, then builds `dist/`              |
-| `npm run watch`     | Rebuilds on save (re-run the plugin in Figma to pick it up) |
-| `npm run typecheck` | Type-check only                                             |
-| `npm test`          | Tests (`node --test`, no extra deps) — see [Tests](#tests)  |
-| `npm run clean`     | Delete `dist/` and `dist-test/`                             |
+| Command             | What it does                                                                   |
+| ------------------- | ------------------------------------------------------------------------------ |
+| `npm run build`     | Type-checks every project, then builds `dist/`                                 |
+| `npm run watch`     | Rebuilds on save (re-run the plugin in Figma to pick it up)                    |
+| `npm run typecheck` | Type-check only (plugin, UI and test projects)                                 |
+| `npm test`          | Tests (`node --test`, no extra deps) — see [Tests](docs/architecture.md#tests) |
+| `npm run clean`     | Delete `dist/` and `dist-test/`                                                |
 
 ---
 
