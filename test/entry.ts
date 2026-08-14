@@ -19,6 +19,7 @@ export {
   googleCode,
   deeplSource,
   deeplTarget,
+  storeLocale,
 } from '../src/shared/languages';
 export { formatWarning, NONE } from '../src/shared/warnings';
 export {
@@ -82,7 +83,7 @@ export {
 /* ---- plugin ---- */
 export { capacityChars, autoFit, MIN_FONT_SCALE, MAX_FONT_SCALE } from '../src/plugin/text-engine';
 export { scanNodes, selectedContainers, CLONEABLE } from '../src/plugin/selection';
-export { unionBounds, firstColumnX, indexExistingByName } from '../src/plugin/layout';
+export { unionBounds, gridOrigin, indexExistingByName } from '../src/plugin/layout';
 export {
   Storage,
   splitLegacySettings,

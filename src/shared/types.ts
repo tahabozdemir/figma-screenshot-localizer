@@ -23,6 +23,24 @@ export interface EngineCodes {
   deeplTarget?: string;
 }
 
+/**
+ * The locale each store files a screenshot set under, when it isn't the plain
+ * BCP-47 tag. The two stores disagree often enough — `ar-SA` vs `ar`,
+ * `zh-Hans` vs `zh-CN` — that the folder names cannot be shared.
+ */
+export interface StoreCodes {
+  /** App Store Connect, e.g. "ar-SA", "zh-Hans". */
+  appStore?: string;
+  /** Google Play Console, e.g. "ar", "zh-CN", "de-DE". */
+  play?: string;
+}
+
+/**
+ * Which store's locale becomes an export folder in the frame name.
+ * `none` keeps the flat, tagged naming.
+ */
+export type FolderScheme = 'none' | 'appStore' | 'play' | 'tag';
+
 export interface LanguageDef {
   /** Display / frame-naming code, e.g. "ZH-CN". */
   code: string;
@@ -31,8 +49,10 @@ export interface LanguageDef {
   /** Human readable name, e.g. "Chinese Simplified". */
   name: string;
   rtl: boolean;
-  script: 'latin' | 'cyrillic' | 'cjk' | 'arabic';
+  script: 'latin' | 'cyrillic' | 'cjk' | 'arabic' | 'thai';
   engine?: EngineCodes;
+  /** Store locales that differ from the tag. Absent = the tag is the locale. */
+  stores?: StoreCodes;
 }
 
 /** What a provider is able to do. Declared by the registry, never inferred. */
@@ -51,7 +71,7 @@ export interface GenerateOptions {
   autoAdjust: boolean;
   detectOverflow: boolean;
   preserveFormatting: boolean;
-  /** true -> "Hero_DE", false -> "[DE] Hero". */
+  /** true -> "Hero_DE", false -> "[DE] Hero". Ignored once folders are on. */
   suffixNaming: boolean;
   /**
    * Replace an earlier run's frames (matched by name) in place instead of
@@ -66,11 +86,22 @@ export interface GenerateOptions {
   fitToLayout: boolean;
 }
 
+/** Everything frame naming reads. `exportFolders` wins over `suffixNaming`. */
+export interface NamingOptions {
+  suffixNaming: boolean;
+  exportFolders: FolderScheme;
+}
+
 export interface GenerateConfig {
   sourceLanguage: string;
   targets: string[];
   mode: TranslationMode;
   options: GenerateOptions;
+  /**
+   * Which store's locale the frames are named into, e.g. "ar-SA/01_Hero".
+   * Not part of `options` because that blob is booleans only.
+   */
+  exportFolders: FolderScheme;
   /** Product names / proper nouns the model must leave untouched. */
   doNotTranslate: string[];
   /**
@@ -139,6 +170,8 @@ export interface PersistedSettings {
   targets: string[];
   mode: TranslationMode;
   options: GenerateOptions;
+  /** Store whose locales become export folders in the frame names. */
+  exportFolders: FolderScheme;
   doNotTranslate: string;
   /** Raw glossary text, one `term = XX: translation, YY: translation` per line. */
   glossary: string;

@@ -87,7 +87,7 @@ export function renderManualEditor(): void {
     ]);
     host.appendChild(block);
 
-    // Rows are built on first expand: 21 languages × every string is a lot of
+    // Rows are built on first expand: 31 languages × every string is a lot of
     // DOM for a panel most people open two of.
     block.addEventListener('toggle', () => {
       if (block.open && !block.querySelector('.mrows')) buildRows(block, lang.code);

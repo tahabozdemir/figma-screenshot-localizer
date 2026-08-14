@@ -15,6 +15,7 @@ import {
   googleCode,
   deeplSource,
   deeplTarget,
+  storeLocale,
   chunk,
   protectedRanges,
   markProtected,
@@ -56,6 +57,12 @@ test('hashString survives emoji and newlines', () => {
 /* Frame naming                                                        */
 /* ------------------------------------------------------------------ */
 
+const SUFFIX = { suffixNaming: true, exportFolders: 'none' };
+const BRACKET = { suffixNaming: false, exportFolders: 'none' };
+const APP_STORE = { suffixNaming: true, exportFolders: 'appStore' };
+const PLAY = { suffixNaming: true, exportFolders: 'play' };
+const TAG = { suffixNaming: false, exportFolders: 'tag' };
+
 test('stripLanguageTag only strips codes it knows', () => {
   assert.equal(stripLanguageTag('01_Hero_EN'), '01_Hero');
   assert.equal(stripLanguageTag('[EN] Hero'), 'Hero');
@@ -65,12 +72,85 @@ test('stripLanguageTag only strips codes it knows', () => {
   assert.equal(stripLanguageTag('Hero'), 'Hero');
 });
 
+test('stripLanguageTag strips a store-locale folder, not any folder', () => {
+  assert.equal(stripLanguageTag('ar-SA/01_Hero'), '01_Hero');
+  assert.equal(stripLanguageTag('zh-Hant/01_Hero'), '01_Hero');
+  // Play's codes count too, so switching store re-folders cleanly.
+  assert.equal(stripLanguageTag('zh-TW/01_Hero'), '01_Hero');
+  assert.equal(stripLanguageTag('tr-TR/01_Hero'), '01_Hero');
+  // A folder of the user's own must survive, tag stripping and all.
+  assert.equal(stripLanguageTag('Screens/01_Hero_EN'), 'Screens/01_Hero');
+  // Only the leading segment is a locale — a deeper one is the design's own.
+  assert.equal(stripLanguageTag('en-US/Screens/01 Hero'), 'Screens/01 Hero');
+});
+
 test('localizedName retags rather than appending', () => {
-  assert.equal(localizedName('01_Hero_EN', 'DE', true), '01_Hero_DE');
-  assert.equal(localizedName('01_Hero_EN', 'DE', false), '[DE] 01_Hero');
-  assert.equal(localizedName('[EN] Hero', 'TR', true), 'Hero_TR');
+  assert.equal(localizedName('01_Hero_EN', DE, SUFFIX), '01_Hero_DE');
+  assert.equal(localizedName('01_Hero_EN', DE, BRACKET), '[DE] 01_Hero');
+  assert.equal(localizedName('[EN] Hero', TR, SUFFIX), 'Hero_TR');
   // Re-running on an already localized frame must not stack tags.
-  assert.equal(localizedName(localizedName('Hero_EN', 'DE', true), 'FR', true), 'Hero_FR');
+  assert.equal(
+    localizedName(localizedName('Hero_EN', DE, SUFFIX), langByCode('FR'), SUFFIX),
+    'Hero_FR'
+  );
+});
+
+test('export folders name frames into the chosen store’s locale', () => {
+  assert.equal(localizedName('01_Hero_EN', AR, APP_STORE), 'ar-SA/01_Hero');
+  assert.equal(localizedName('01_Hero', langByCode('ZH-CN'), APP_STORE), 'zh-Hans/01_Hero');
+  assert.equal(localizedName('01_Hero', langByCode('ZH-TW'), APP_STORE), 'zh-Hant/01_Hero');
+  // The same three languages, filed the way Play wants them.
+  assert.equal(localizedName('01_Hero_EN', AR, PLAY), 'ar/01_Hero');
+  assert.equal(localizedName('01_Hero', langByCode('ZH-CN'), PLAY), 'zh-CN/01_Hero');
+  assert.equal(localizedName('01_Hero', langByCode('ZH-TW'), PLAY), 'zh-TW/01_Hero');
+  // The folder replaces the tag rather than stacking with it.
+  assert.equal(localizedName('[EN] Hero', DE, APP_STORE), 'de-DE/Hero');
+  // Switching store re-folders instead of nesting.
+  assert.equal(localizedName(localizedName('Hero', AR, APP_STORE), AR, PLAY), 'ar/Hero');
+  assert.equal(localizedName(localizedName('Hero', DE, PLAY), DE, TAG), 'de/Hero');
+});
+
+test('store locales follow each store, not the BCP-47 tag', () => {
+  // The App Store regionalizes some languages Play leaves plain, and vice versa.
+  assert.equal(storeLocale(AR, 'appStore'), 'ar-SA');
+  assert.equal(storeLocale(AR, 'play'), 'ar');
+  assert.equal(storeLocale(TR, 'appStore'), 'tr');
+  assert.equal(storeLocale(TR, 'play'), 'tr-TR');
+  assert.equal(storeLocale(langByCode('ZH-CN'), 'appStore'), 'zh-Hans');
+  assert.equal(storeLocale(langByCode('ZH-CN'), 'play'), 'zh-CN');
+  // Norwegian's tag is "nb" and neither store agrees with it.
+  assert.equal(storeLocale(langByCode('NO'), 'appStore'), 'no');
+  assert.equal(storeLocale(langByCode('NO'), 'play'), 'no-NO');
+  assert.equal(storeLocale(langByCode('NO'), 'tag'), 'nb');
+  // Both stores regionalize English the same way.
+  assert.equal(storeLocale(EN, 'appStore'), 'en-US');
+  assert.equal(storeLocale(EN, 'play'), 'en-US');
+  assert.equal(storeLocale(EN, 'tag'), 'en');
+});
+
+test('a regional variant is its own language, filed where each store wants it', () => {
+  const gb = langByCode('EN-GB');
+  const mx = langByCode('ES-MX');
+  const br = langByCode('PT-BR');
+
+  // App Store and Play agree on the Englishes…
+  assert.equal(storeLocale(gb, 'appStore'), 'en-GB');
+  assert.equal(storeLocale(gb, 'play'), 'en-GB');
+  // …and disagree on Mexican Spanish, which Play only has as Latin America.
+  assert.equal(storeLocale(mx, 'appStore'), 'es-MX');
+  assert.equal(storeLocale(mx, 'play'), 'es-419');
+  assert.equal(storeLocale(br, 'appStore'), 'pt-BR');
+
+  // The tag is what the AI providers are told to translate into, and it is
+  // distinct from the base language — which is what keeps the two apart in
+  // the translation memory.
+  assert.equal(gb.tag, 'en-GB');
+  assert.notEqual(gb.tag, langByCode('EN').tag);
+
+  // Naming keeps the variant intact rather than mistaking "EN" for the tag.
+  assert.equal(localizedName('01_Hero_EN', gb, SUFFIX), '01_Hero_EN-GB');
+  assert.equal(stripLanguageTag('01_Hero_EN-GB'), '01_Hero');
+  assert.equal(localizedName('en-US/01_Hero', gb, APP_STORE), 'en-GB/01_Hero');
 });
 
 test('engine language codes map to the documented variants', () => {
@@ -81,6 +161,12 @@ test('engine language codes map to the documented variants', () => {
   // Source codes are always the plain language, never a regional variant.
   assert.equal(deeplSource(langByCode('ZH-CN')), 'ZH');
   assert.equal(deeplSource(DE), 'DE');
+  assert.equal(deeplSource(langByCode('EN-GB')), 'EN');
+  assert.equal(deeplTarget(langByCode('EN-GB')), 'EN-GB');
+  assert.equal(deeplTarget(langByCode('PT-BR')), 'PT-BR');
+  // Google has one code for every English, which the providers guard against.
+  assert.equal(googleCode(langByCode('EN-GB')), 'en');
+  assert.equal(googleCode(langByCode('ES-MX')), 'es');
 });
 
 /* ------------------------------------------------------------------ */

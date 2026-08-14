@@ -6,6 +6,22 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- **Export folders per language.** The generated frames can be named `ar-SA/01_Hero` so that Figma's
+  own export writes one folder per store locale — App Store Connect codes, Google Play codes, or the
+  plain BCP-47 tag. Switching store re-folders an earlier run instead of nesting inside it, and a
+  folder of your own is left alone.
+- **Six regional variants as their own targets**, so a storefront that wants different copy can have
+  it: `EN-GB`, `EN-AU`, `EN-CA`, `FR-CA`, `ES-MX` and `PT-BR`. Each carries its own store locales
+  (Play files Mexican Spanish under `es-419`), its own DeepL variant and its own translation memory.
+
+### Changed
+
+- A provider whose engine has one code for both ends of the pair — Google's single `en` on an
+  `EN` → `EN-GB` run — now copies the text through with a note instead of letting the API answer
+  "Bad language pair" and losing the language its frames.
+
 ## [1.0.0] — 2026-08-14
 
 Initial public release.

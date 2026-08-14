@@ -6,7 +6,13 @@
  * them. They are shared now, so a new option cannot exist on one side only.
  */
 
-import type { GenerateOptions, PersistedSettings, Secrets, TranslationMode } from './types';
+import type {
+  FolderScheme,
+  GenerateOptions,
+  PersistedSettings,
+  Secrets,
+  TranslationMode,
+} from './types';
 
 export const DEFAULT_OPTIONS: GenerateOptions = {
   groupPerLanguage: false,
@@ -24,6 +30,7 @@ export const DEFAULT_SETTINGS: PersistedSettings = {
   targets: [],
   mode: 'manual',
   options: DEFAULT_OPTIONS,
+  exportFolders: 'none',
   doNotTranslate: '',
   glossary: '',
   openaiModel: 'gpt-4o-mini',
@@ -38,6 +45,8 @@ export const DEFAULT_SECRETS: Secrets = {
   deeplKey: '',
   deeplFreeKey: '',
 };
+
+const FOLDERS: FolderScheme[] = ['none', 'appStore', 'play', 'tag'];
 
 const MODES: TranslationMode[] = [
   'manual',
@@ -73,6 +82,11 @@ export function normalizeOptions(raw: unknown): GenerateOptions {
   return out;
 }
 
+/** An unknown (or absent) scheme means the flat, tagged naming. */
+export function normalizeFolders(raw: unknown): FolderScheme {
+  return FOLDERS.indexOf(raw as FolderScheme) >= 0 ? (raw as FolderScheme) : 'none';
+}
+
 /** Fills every field, drops anything unrecognized, never throws. */
 export function normalizeSettings(raw: unknown): PersistedSettings {
   const src = (raw && typeof raw === 'object' ? raw : {}) as Partial<PersistedSettings>;
@@ -85,6 +99,7 @@ export function normalizeSettings(raw: unknown): PersistedSettings {
     targets: stringList(src.targets),
     mode,
     options: normalizeOptions(src.options),
+    exportFolders: normalizeFolders(src.exportFolders),
     doNotTranslate: str(src.doNotTranslate, ''),
     glossary: str(src.glossary, ''),
     openaiModel: str(src.openaiModel, DEFAULT_SETTINGS.openaiModel),

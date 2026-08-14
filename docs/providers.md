@@ -16,8 +16,8 @@ and how to add another one.
 | Gemini                  | `x-goog-api-key`        | Same, usually cheaper                                      |
 | Google Translate        | `x-goog-api-key`        | Cloud Translation API. Fast, cheap, 64 strings per request |
 | Google Translate (free) | none                    | Unofficial endpoint — see the caveats below                |
-| DeepL                   | `DeepL-Auth-Key`        | Usually the best quality for European languages            |
-| DeepL (Free API)        | `DeepL-Auth-Key`        | Same engine, 500k characters/month at no cost              |
+| DeepL                   | `DeepL-Auth-Key`        | **Doesn't work inside Figma** — [why](#deepl-and-cors)     |
+| DeepL (Free API)        | `DeepL-Auth-Key`        | Same engine, same CORS wall                                |
 
 **Manual** — the plugin lists every unique string in the selection. Expand a language and type the
 translations. `×3` next to a string means it appears on three layers; you translate it once. Entries
@@ -53,13 +53,16 @@ endpoint behind Google's web widget. No key, no cost, and no guarantees:
 - undocumented and unsupported: Google may change or block it at any time, and automated use is
   outside their terms of service
 
-Fine for a quick draft. Use the Cloud API or DeepL for anything you ship.
+Fine for a quick draft. Use the Cloud API for anything you ship.
 
 **DeepL** — `POST https://api.deepl.com/v2/translate` (Pro) or `https://api-free.deepl.com/v2/translate`
-(Free). A key ending in `:fx` is a Free key; if it doesn't match the mode you picked, the plugin
-routes to the correct endpoint anyway and notes it, rather than letting you hit a confusing 403.
-Requests use `tag_handling: xml` with `ignore_tags: ["x"]` for placeholder protection. Quota
-exhaustion (HTTP 456) is reported as such.
+(Free). **Currently unreachable from inside Figma — see [DeepL and CORS](#deepl-and-cors).** The
+implementation is kept for the day that changes: a key ending in `:fx` is a Free key, and if it
+doesn't match the mode you picked, the plugin routes to the correct endpoint anyway and notes it,
+rather than letting you hit a confusing 403. Requests use `tag_handling: xml` with
+`ignore_tags: ["x"]` for placeholder protection. Quota exhaustion (HTTP 456) is reported as such.
+Target variants are fixed per language (`EN` → `EN-US`, `PT` → `PT-PT`, `NO` → `NB`) — change them
+in `src/shared/languages.ts` (`engine.deeplTarget`) if you want `EN-GB` or `PT-BR`.
 
 Strings are batched — 40 per request for the LLMs and DeepL, 64 for Google Cloud, never one request
 per layer (the free Google endpoint being the exception it has to be). A batch that fails does not
@@ -146,10 +149,24 @@ protected noun and didn't come out is reported in the warning list.
 
 ---
 
-## Why requests sometimes go through the plugin sandbox
+## DeepL and CORS
 
-The plugin UI is a normal browser iframe, so it is bound by CORS — and **DeepL deliberately sends no
-CORS headers**. Figma's plugin sandbox has its own `fetch` that is proxied by the app and is not
-subject to CORS, so DeepL requests are routed there over a message round-trip. Everything else uses
-the browser directly and falls back to the sandbox only if the transport fails. Either way, requests
+The plugin UI is a normal browser iframe with a `null` origin, so it is bound by CORS and can only
+call APIs that allow that origin (`Access-Control-Allow-Origin: *`, or the origin echoed back).
+Figma's plugin sandbox has its own
+`fetch`, but it is proxied through the same null-origin browser machinery — Figma's docs are
+explicit that CORS applies to plugin requests wherever they are made. **A Figma plugin has no
+CORS-free network path.**
+
+DeepL deliberately sends no CORS headers on either tier (the preflight for
+`api-free.deepl.com/v2/translate` answers `204` with no `Access-Control-Allow-Origin` at all), so
+both routes fail with the browser's generic `Failed to fetch` and the DeepL modes cannot work. The
+only fix would be a proxy server between the plugin and DeepL that adds the missing header — and a
+backend is what this plugin promises not to have, so there isn't one. Google's endpoints (Cloud and
+free) and the LLM APIs all answer the plugin's `null` origin with a permissive
+`Access-Control-Allow-Origin`, which is why every other mode is fine.
+
+The two-route transport still exists for the providers that do work: requests go through the
+browser first and, if the transport fails, are retried once through the sandbox — a dropped
+connection and a CORS rejection are indistinguishable from inside the iframe. Either way, requests
 can only reach the domains allow-listed in `manifest.json`.

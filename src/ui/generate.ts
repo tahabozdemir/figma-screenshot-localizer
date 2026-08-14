@@ -48,6 +48,7 @@ export function startGeneration(): void {
     targets: state.settings.targets.slice(),
     mode: state.settings.mode,
     options: state.settings.options,
+    exportFolders: state.settings.exportFolders,
     doNotTranslate: doNotTranslateList(),
     cacheKey: descriptor.cacheKey(state),
     capabilities: descriptor.capabilities,

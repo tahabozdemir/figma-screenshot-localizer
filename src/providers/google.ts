@@ -1,4 +1,11 @@
-import { GOOGLE_POLICY, ResponseError, httpError, missingKey, runChunks } from './base';
+import {
+  GOOGLE_POLICY,
+  ResponseError,
+  httpError,
+  missingKey,
+  runChunks,
+  sameEngineLanguage,
+} from './base';
 import { googleCode } from '../shared/languages';
 import { markProtected, unmarkProtected } from './protect';
 import { parseJson, type Transport } from './transport';
@@ -34,6 +41,7 @@ export class GoogleTranslateProvider implements TranslationProvider {
     if (!this.apiKey) return missingKey('Google Cloud Translation');
     const source = googleCode(req.source);
     const target = googleCode(req.target);
+    if (source === target) return sameEngineLanguage(req, 'Google Translate');
 
     return runChunks(
       req,

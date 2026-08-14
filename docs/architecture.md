@@ -24,7 +24,7 @@ figma-screenshot-localizer/
 │   │   ├── messages.ts      The message protocol + a validator for each direction
 │   │   ├── warnings.ts      Warning codes and the one place they become sentences
 │   │   ├── defaults.ts      Every default, and the normalizers that fill a partial object
-│   │   ├── languages.ts     The 21 languages (incl. their per-engine codes) + frame tagging
+│   │   ├── languages.ts     The 31 languages (per-engine + per-store codes) + frame naming
 │   │   ├── rpc.ts           Request/reply over postMessage — used by both threads
 │   │   ├── cancellation.ts  CancellationToken
 │   │   ├── log.ts           Debug breadcrumbs for deliberately-swallowed errors
@@ -44,7 +44,7 @@ figma-screenshot-localizer/
 │   │   ├── localize.ts      One frame: writing text, RTL, budgets, the shorten pass
 │   │   ├── text-engine.ts   Discovery, fonts, style-preserving replacement, measure + auto-fit
 │   │   ├── selection.ts     Selection scan (one traversal, one dedup)
-│   │   ├── layout.ts        Bounds, column origins, containers, finding an earlier run
+│   │   ├── layout.ts        Bounds, the output grid, containers, finding an earlier run
 │   │   ├── storage.ts       clientStorage: settings / secrets / manual / TM, with migration
 │   │   └── net-proxy.ts     The sandbox side of the CORS escape hatch
 │   └── ui/                Iframe thread. Never touches the document

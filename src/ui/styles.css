@@ -241,6 +241,14 @@ textarea:focus {
   color: var(--text-2);
 }
 
+.field > em {
+  display: block;
+  margin-top: 3px;
+  font-style: normal;
+  font-size: 10px;
+  color: var(--text-2);
+}
+
 label.check {
   display: flex;
   align-items: flex-start;

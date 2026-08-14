@@ -11,7 +11,13 @@
 import type { CancellationToken } from '../shared/cancellation';
 import { LANGUAGES, langByCode, localizedName } from '../shared/languages';
 import { swallow } from '../shared/log';
-import type { GenerateConfig, GenerateSummary, LanguageDef, SourceString } from '../shared/types';
+import type {
+  GenerateConfig,
+  GenerateSummary,
+  LanguageDef,
+  NamingOptions,
+  SourceString,
+} from '../shared/types';
 import { delay, errorText } from '../shared/util';
 import { NONE, type Warning } from '../shared/warnings';
 import type { DocumentPort } from './figma-port';
@@ -25,9 +31,10 @@ import {
 import {
   GROUP_GAP,
   CONTAINER_PADDING,
+  LANGS_PER_COLUMN,
   absBox,
   createContainer,
-  firstColumnX,
+  gridOrigin,
   indexExistingByName,
   unionBounds,
   type Container,
@@ -41,7 +48,7 @@ import * as TE from './text-engine';
  *
  * 1 meant every language's round-trip was fully serialised behind the previous
  * language being drawn. Raising it trades a little more concurrent API load for
- * a materially shorter 21-language run; the provider's own `concurrency`
+ * a materially shorter 31-language run; the provider's own `concurrency`
  * multiplies with it, so both are kept deliberately small.
  */
 export const PREFETCH_LANGUAGES = 2;
@@ -203,6 +210,11 @@ export async function generate(
   const sourceById: Record<string, string> = {};
   for (const item of allStrings) sourceById[item.id] = item.text;
 
+  const naming: NamingOptions = {
+    suffixNaming: config.options.suffixNaming,
+    exportFolders: config.exportFolders,
+  };
+
   const loadedFonts = new Set<string>();
   const failedFonts = new Set<string>();
   const scriptWarned = new Set<string>();
@@ -246,7 +258,7 @@ export async function generate(
   fillQueue();
 
   const bounds = unionBounds(sources);
-  const startX = firstColumnX(doc, bounds);
+  const origin = gridOrigin(doc, bounds);
   const createdRoots: SceneNode[] = [];
   const sourceIds: Record<string, true> = {};
   for (const source of sources) sourceIds[source.id] = true;
@@ -291,8 +303,9 @@ export async function generate(
     }
 
     /* ---- 2. container (created lazily: replaced frames never need one) ---- */
-    const originX = startX + li * (bounds.width + GROUP_GAP);
-    const originY = bounds.y;
+    // Languages flow downward; every LANGS_PER_COLUMN of them start a new column.
+    const originX = origin.x + Math.floor(li / LANGS_PER_COLUMN) * (bounds.width + GROUP_GAP);
+    const originY = origin.y + (li % LANGS_PER_COLUMN) * (bounds.height + GROUP_GAP);
     let container: Container | null = null;
     let containerTried = false;
     const getContainer = (): Container | null => {
@@ -332,7 +345,7 @@ export async function generate(
       });
 
       const srcBox = absBox(source);
-      const targetName = localizedName(source.name, lang.code, config.options.suffixNaming);
+      const targetName = localizedName(source.name, lang, naming);
       const previous = existingByName.get(targetName);
 
       let clone: SceneNode;
@@ -455,7 +468,7 @@ export async function generate(
   if (!config.options.keepOriginals) {
     for (const source of sources) {
       try {
-        source.name = localizedName(source.name, sourceLang.code, config.options.suffixNaming);
+        source.name = localizedName(source.name, sourceLang, naming);
       } catch (e) {
         swallow('generate: renaming the source frame', e);
       }

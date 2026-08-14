@@ -1,6 +1,6 @@
 /**
- * Where the generated frames go: bounding boxes, the column origin for each
- * language, the optional per-language container, and finding what an earlier
+ * Where the generated frames go: bounding boxes, the output grid each language
+ * lands in, the optional per-language container, and finding what an earlier
  * run left behind.
  */
 
@@ -9,8 +9,10 @@ import type { LanguageDef } from '../shared/types';
 import type { DocumentPort } from './figma-port';
 import { CLONEABLE } from './selection';
 
-/** Horizontal gap between language columns. */
+/** Gap between language groups, both down the column and across to the next. */
 export const GROUP_GAP = 240;
+/** How many languages stack below each other before a new column starts. */
+export const LANGS_PER_COLUMN = 5;
 /** Breathing room inside a per-language container. */
 export const CONTAINER_PADDING = 96;
 
@@ -51,16 +53,17 @@ export function unionBounds(nodes: SceneNode[]): Box {
 }
 
 /**
- * Where the first language column starts. Clearing everything already on the
- * page means a second run lands next to the first instead of on top of it.
+ * Where the output grid starts: aligned with the sources' left edge, below
+ * everything already on the page. Clearing the full page bottom means a second
+ * run lands under the first instead of on top of it.
  */
-export function firstColumnX(doc: DocumentPort, bounds: Box): number {
-  let right = bounds.x + bounds.width;
+export function gridOrigin(doc: DocumentPort, bounds: Box): { x: number; y: number } {
+  let bottom = bounds.y + bounds.height;
   for (const child of doc.pageChildren()) {
     const box = absBox(child);
-    right = Math.max(right, box.x + box.width);
+    bottom = Math.max(bottom, box.y + box.height);
   }
-  return right + GROUP_GAP;
+  return { x: bounds.x, y: bottom + GROUP_GAP };
 }
 
 /** A Section if this Figma build has them, otherwise an unfilled frame. */

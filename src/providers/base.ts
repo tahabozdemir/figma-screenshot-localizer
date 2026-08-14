@@ -254,3 +254,27 @@ export function hasBudgets(req: TranslateRequest): boolean {
 export function missingKey(name: string): TranslateResult {
   return { translations: {}, error: 'No ' + name + ' API key entered.', issues: [] };
 }
+
+/**
+ * Both ends resolve to one engine code — EN -> EN-GB is `en` -> `en` to Google,
+ * which answers "Bad language pair" and would cost the language its frames.
+ *
+ * The regional variants exist so that each storefront gets its own folder, so
+ * copying the text through is the useful answer here; the note says plainly
+ * that no rewriting happened, and an AI mode is the one that can do it.
+ */
+export function sameEngineLanguage(req: TranslateRequest, engine: string): TranslateResult {
+  const translations: Record<string, string> = {};
+  for (const item of req.strings) translations[item.id] = item.text;
+  return {
+    translations,
+    issues: [
+      engine +
+        ' uses one code for ' +
+        req.source.code +
+        ' and ' +
+        req.target.code +
+        ', so the text was copied over unchanged. Use an AI mode to have it rewritten for the region.',
+    ],
+  };
+}

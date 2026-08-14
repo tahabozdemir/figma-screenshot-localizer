@@ -1,4 +1,10 @@
-import { GOOGLE_FREE_POLICY, ResponseError, httpError, runChunks } from './base';
+import {
+  GOOGLE_FREE_POLICY,
+  ResponseError,
+  httpError,
+  runChunks,
+  sameEngineLanguage,
+} from './base';
 import { googleCode } from '../shared/languages';
 import { parseJson, type Transport } from './transport';
 import type {
@@ -34,6 +40,7 @@ export class GoogleFreeProvider implements TranslationProvider {
   async translate(req: TranslateRequest, ctx: ProviderContext): Promise<TranslateResult> {
     const source = googleCode(req.source);
     const target = googleCode(req.target);
+    if (source === target) return sameEngineLanguage(req, 'Google Translate');
 
     return runChunks(
       req,

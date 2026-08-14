@@ -5,7 +5,7 @@
 
 An open-source Figma plugin that duplicates your App Store and Google Play screenshot frames and
 replaces the text with translations, one set per language — locally, with your own API key or by
-hand. Translate into 21 languages via OpenAI, Gemini, DeepL or Google Translate, with the copy fitted
+hand. Translate into 31 languages via OpenAI, Gemini or Google Translate, with the copy fitted
 to the layout it has to live in.
 
 ```
@@ -19,7 +19,7 @@ The only network requests the plugin can make are to the translation provider yo
 API key — and Manual mode makes none at all.
 
 <p align="center">
-  <img src="docs/images/panel-languages.png" width="46%" alt="The plugin panel: selected frames, a searchable list of 21 target languages, and the translation mode picker">
+  <img src="docs/images/panel-languages.png" width="46%" alt="The plugin panel: selected frames, a searchable list of target languages, and the translation mode picker">
   <img src="docs/images/panel-options.png" width="46%" alt="The options section: layout and naming switches, the never-translate list, the glossary field and the debug logging toggle">
 </p>
 
@@ -62,24 +62,25 @@ Other scripts:
 4. Pick a translation mode.
 5. Press **Generate Localized Screenshots**.
 
-Each language gets its own column of frames placed to the right of everything already on the page,
-so re-running never lands on top of your previous output. (Turn on _Update frames from an earlier
-run_ if you would rather replace last run's frames in place.) When it finishes, the new frames are
-selected and the viewport zooms to them.
+Generated frames land below everything already on the page, aligned with your sources: each
+language stacks under the previous one, and after five languages the next one starts a new column
+to the right. Re-running never lands on top of your previous output — a second run continues below
+the first. (Turn on _Update frames from an earlier run_ if you would rather replace last run's
+frames in place.) When it finishes, the new frames are selected and the viewport zooms to them.
 
 Drag the bottom-right corner to resize the panel.
 
 ### Translation modes
 
-| Mode                    | Key                     | Notes                                                      |
-| ----------------------- | ----------------------- | ---------------------------------------------------------- |
-| Manual                  | —                       | You type everything                                        |
-| OpenAI                  | `Authorization: Bearer` | Best at following instructions and keeping copy punchy     |
-| Gemini                  | `x-goog-api-key`        | Same, usually cheaper                                      |
-| Google Translate        | `x-goog-api-key`        | Cloud Translation API. Fast, cheap, 64 strings per request |
-| Google Translate (free) | none                    | Unofficial endpoint — drafts only, see the caveats         |
-| DeepL                   | `DeepL-Auth-Key`        | Usually the best quality for European languages            |
-| DeepL (Free API)        | `DeepL-Auth-Key`        | Same engine, 500k characters/month at no cost              |
+| Mode                    | Key                     | Notes                                                                 |
+| ----------------------- | ----------------------- | --------------------------------------------------------------------- |
+| Manual                  | —                       | You type everything                                                   |
+| OpenAI                  | `Authorization: Bearer` | Best at following instructions and keeping copy punchy                |
+| Gemini                  | `x-goog-api-key`        | Same, usually cheaper                                                 |
+| Google Translate        | `x-goog-api-key`        | Cloud Translation API. Fast, cheap, 64 strings per request            |
+| Google Translate (free) | none                    | Unofficial endpoint — drafts only, see the caveats                    |
+| DeepL                   | `DeepL-Auth-Key`        | **Doesn't work inside Figma** — [why](#why-the-deepl-modes-dont-work) |
+| DeepL (Free API)        | `DeepL-Auth-Key`        | Same — DeepL's API sends no CORS headers                              |
 
 Each mode's request shape, the batching and retry rules, the glossary and how
 placeholders are protected: **[docs/providers.md](docs/providers.md)**.
@@ -93,13 +94,64 @@ placeholders are protected: **[docs/providers.md](docs/providers.md)**.
 | Auto-adjust text when longer          | **on**  | Runs the fit algorithm below                                                                                                                                                |
 | Detect text overflow                  | **on**  | Produces the warning list                                                                                                                                                   |
 | Preserve original text formatting     | **on**  | Re-applies mixed character styling (see limitations)                                                                                                                        |
-| Add language suffix to frame names    | **on**  | `Hero_DE`. Turn off for `[DE] Hero`                                                                                                                                         |
+| Add language suffix to frame names    | **on**  | `Hero_DE`. Turn off for `[DE] Hero`. Ignored once export folders are on                                                                                                     |
+| Export folders per language           | off     | Names the frames `ar-SA/Hero` (App Store Connect), `ar/Hero` (Google Play) or `ar/Hero` (plain BCP-47 tag) — see [Export folders](#export-folders)                          |
 | Let the AI fit the copy to the layout | **on**  | AI modes only. Sends each string its measured character budget, then asks for a shorter wording for whatever still overflows                                                |
-| Update frames from an earlier run     | off     | Replaces a frame of the same name in place — same position, same parent — instead of adding another column. The old frame is deleted                                        |
+| Update frames from an earlier run     | off     | Replaces a frame of the same name in place — same position, same parent — instead of adding to the grid below. The old frame is deleted                                     |
 | Debug logging                         | off     | Logs the failures the plugin normally swallows (a locked layer, an unsupported property, storage over quota) to the developer console. Worth turning on before filing a bug |
 
 Naming strips an existing language tag first, so `01_Hero_EN` becomes `01_Hero_DE`, not
 `01_Hero_EN_DE`. Only tags that match a known language code are stripped — `Hero_V2` is left alone.
+
+### Export folders
+
+Figma turns a `/` in a layer name into a folder when you export more than one layer at once, so
+naming the output `ar-SA/01_Hero` is all it takes to get an upload-ready archive. Pick the store in
+**Options → Export folders per language**, generate, then select every generated frame, add an
+export setting in the right-hand panel and press _Export_: the ZIP contains one folder per locale.
+
+The two stores disagree on the codes, which is why it is a picker and not a switch:
+
+| Language            | App Store Connect | Google Play | Language tag |
+| ------------------- | ----------------- | ----------- | ------------ |
+| Arabic              | `ar-SA`           | `ar`        | `ar`         |
+| Chinese Simplified  | `zh-Hans`         | `zh-CN`     | `zh-Hans`    |
+| Chinese Traditional | `zh-Hant`         | `zh-TW`     | `zh-Hant`    |
+| Turkish             | `tr`              | `tr-TR`     | `tr`         |
+| Norwegian           | `no`              | `no-NO`     | `nb`         |
+
+Switching store re-folders rather than nesting: a frame that came out of an App Store run as
+`ar-SA/01_Hero` becomes `ar/01_Hero` on a Play run, never `ar/ar-SA/01_Hero`. A folder of your own
+survives untouched — `Screens/01_Hero` is not a locale, so nothing is stripped. With _Keep original
+frames unchanged_ off, the sources are filed under the source language's own folder
+(`en-US/01_Hero`), which is what makes the export complete.
+
+The codes live on each language in `src/shared/languages.ts` (`stores`); a store locale that isn't
+there yet is a one-line edit.
+
+### Regional variants
+
+A storefront does not get its own folder — both stores file screenshots per _localization_, and
+around 175 App Store storefronts share about 40 of them. What does get its own folder is a regional
+variant of a language, and six of them are separate targets in the language list:
+
+| Target  | Name                | App Store | Play     | Translated as                         |
+| ------- | ------------------- | --------- | -------- | ------------------------------------- |
+| `EN-GB` | English (UK)        | `en-GB`   | `en-GB`  | DeepL `EN-GB`; AI modes get the tag   |
+| `EN-AU` | English (Australia) | `en-AU`   | `en-AU`  | DeepL has no AU variant → `EN-GB`     |
+| `EN-CA` | English (Canada)    | `en-CA`   | `en-CA`  | `EN-GB` — Canadian spelling is `-our` |
+| `FR-CA` | French (Canada)     | `fr-CA`   | `fr-CA`  | DeepL has no CA variant → `FR`        |
+| `ES-MX` | Spanish (Mexico)    | `es-MX`   | `es-419` | DeepL `ES`                            |
+| `PT-BR` | Portuguese (Brazil) | `pt-BR`   | `pt-BR`  | DeepL `PT-BR`                         |
+
+Each is a full target language, so `EN` → `EN-GB` really does go to the provider and comes back
+rewritten ("color" → "colour"), with its own translation-memory bucket and its own manual-mode
+column. The AI modes are the ones that honour the region, because they are handed the BCP-47 tag.
+
+Google Translate has a single `en`, `es` and `fr`, so a variant whose engine code matches the source
+would be the pair `en|en`. Rather than let the API reject it, the Google and DeepL providers copy
+the text through unchanged and say so in the warning list — you still get the `en-GB/` folder, just
+with the source copy in it. Use an AI mode, or Manual, if the wording has to differ.
 
 The layout rules behind _Auto-adjust_ and _Let the AI fit the copy to the layout_ —
 what gets measured, what gets shrunk and when it gives up — are in
@@ -131,15 +183,27 @@ what gets measured, what gets shrunk and when it gives up — are in
   space the current text uses; character count does not scale linearly with box area. The model
   treats it as a hint, and the conservative fit pass is still the thing that guarantees nothing
   silently overflows.
-- **Machine translation has no context.** Google and DeepL see one caption at a time with no idea
-  that it is a headline in a screenshot, so they will not shorten copy to fit or pick the punchier
+- **Machine translation has no context.** Google Translate sees one caption at a time with no idea
+  that it is a headline in a screenshot, so it will not shorten copy to fit or pick the punchier
   of two valid phrasings the way the LLM modes are told to. For hero headlines, the AI modes or
-  Manual usually win; for body copy and feature lists, DeepL is typically the fastest good answer.
-- **DeepL language coverage.** All 21 languages here are supported, but DeepL picks the variant:
-  `EN` becomes `EN-US`, `PT` becomes `PT-PT`, `NO` becomes `NB`. Change it in
-  `src/languages.ts` (`DEEPL_TARGET_CODES`) if you want `EN-GB` or `PT-BR`.
+  Manual usually win; for body copy and feature lists, Google Translate is the fastest good answer.
 - **Overflow detection** relies on Figma's own text measurement. Text that is clipped by an ancestor
   with `clipsContent` several levels up may still need a human eye.
+
+### Why the DeepL modes don't work
+
+Every network request a Figma plugin makes — from the panel iframe and from the plugin sandbox's
+`fetch` alike — is a browser request with a `null` origin. CORS therefore applies everywhere, and
+only APIs whose CORS headers allow that origin are reachable; Figma provides no
+CORS-exempt network path. The DeepL API (Free and Pro alike) deliberately sends **no CORS headers
+at all**, so the browser blocks the request before the plugin can read a byte, and both routes
+fail with the browser's generic `Failed to fetch` — which is the unhelpful error that ends up in
+the warning list.
+
+The only cure would be a proxy server sitting between the plugin and DeepL to add the missing
+header — and a backend is exactly what this plugin promises not to have, so there isn't one. The
+DeepL modes stay in the code in case Figma ever offers a CORS-exempt `fetch` or DeepL starts
+sending CORS headers; until then, use OpenAI, Gemini or Google Translate.
 
 ---
 
@@ -157,14 +221,15 @@ rebuilds automatically but Figma still needs the plugin re-run.
 
 **A model id stopped working** — edit the model field in the panel; it's free text and is saved.
 
-**DeepL returns 403** — the key is wrong, or it's a Free key being used as Pro. The plugin normally
-auto-routes by the `:fx` suffix, so a 403 usually means the key itself is bad.
+**DeepL fails with `Failed to fetch (retry via the browser also failed: Failed to fetch)`** — not
+your key and not your network. DeepL's API cannot be reached from inside a Figma plugin at all —
+see [Why the DeepL modes don't work](#why-the-deepl-modes-dont-work).
 
 **Google Translate returns 403** — the key is valid but its project doesn't have the Cloud
 Translation API enabled, or billing isn't set up.
 
-**"This Figma version cannot make requests from the plugin sandbox"** — DeepL needs the sandbox
-`fetch` to get around CORS. Update the Figma desktop app, or use Google/OpenAI/Gemini instead.
+**"This Figma version cannot make requests from the plugin sandbox"** — a request fell back to the
+plugin sandbox and this Figma build predates the sandbox `fetch`. Update the Figma desktop app.
 
 ---
 

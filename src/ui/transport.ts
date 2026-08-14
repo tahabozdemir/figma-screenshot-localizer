@@ -2,10 +2,12 @@
  * The concrete transport: browser `fetch`, with a fallback through the plugin
  * sandbox.
  *
- * The iframe is a normal browser context, so it is bound by CORS. Some APIs
- * (DeepL in particular) deliberately send no CORS headers. Figma's sandbox has
- * its own `fetch` that the app proxies and that CORS does not apply to, so
- * requests a browser refuses are re-issued there over a message round-trip.
+ * The iframe is a normal browser context, so it is bound by CORS. The sandbox
+ * `fetch` is proxied by the app but runs through the same null-origin browser
+ * machinery, so CORS applies there too — the fallback covers transient
+ * transport failures, not APIs that send no CORS headers at all. Those (DeepL)
+ * are unreachable from a Figma plugin entirely; see "DeepL and CORS" in
+ * docs/providers.md.
  *
  * Either way the request only reaches the domains allow-listed in manifest.json.
  */

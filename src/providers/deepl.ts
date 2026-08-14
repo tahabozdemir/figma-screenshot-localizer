@@ -1,4 +1,4 @@
-import { DEEPL_POLICY, ResponseError, httpError, runChunks } from './base';
+import { DEEPL_POLICY, ResponseError, httpError, runChunks, sameEngineLanguage } from './base';
 import { deeplSource, deeplTarget } from '../shared/languages';
 import { markProtected, unmarkProtected } from './protect';
 import { parseJson, type Transport } from './transport';
@@ -61,6 +61,7 @@ export class DeepLProvider implements TranslationProvider {
 
     const source = deeplSource(req.source);
     const target = deeplTarget(req.target);
+    if (source === target) return sameEngineLanguage(req, 'DeepL');
 
     const result = await runChunks(
       req,
@@ -73,7 +74,9 @@ export class DeepLProvider implements TranslationProvider {
             'Content-Type': 'application/json',
             Authorization: 'DeepL-Auth-Key ' + this.apiKey,
           },
-          // DeepL sends no CORS headers, so this always goes via the sandbox.
+          // DeepL sends no CORS headers, so the browser route can never work;
+          // the sandbox is tried first. Today that fails too — no Figma route
+          // is CORS-exempt — see "DeepL and CORS" in docs/providers.md.
           preferBridge: true,
           body: JSON.stringify({
             text: items.map((i) => markProtected(i.text, ctx.doNotTranslate, '<x>', '</x>')),

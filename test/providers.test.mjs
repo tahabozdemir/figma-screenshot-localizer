@@ -272,6 +272,26 @@ test('Google marks placeholders untranslatable and unwraps the result', async ()
   assert.equal(result.translations.a, 'Hallo {{name}}, HabitFlow & co');
 });
 
+test('Google copies the text through when both ends are the same engine code', async () => {
+  // EN -> EN-GB is "en" -> "en" to Google, which would answer "Bad language pair".
+  const transport = scripted();
+  const provider = new GoogleTranslateProvider({ transport, apiKey: 'AIza' });
+
+  const result = await provider.translate(
+    {
+      source: EN,
+      target: langByCode('EN-GB'),
+      strings: [{ id: 'a', text: 'Track your habits', count: 1 }],
+    },
+    ctx
+  );
+
+  assert.equal(result.translations.a, 'Track your habits');
+  assert.equal(result.error, undefined, 'a copied language is not a failed one');
+  assert.match(result.issues[0], /EN and EN-GB/);
+  assert.equal(transport.calls.length, 0, 'and no request is worth making');
+});
+
 test('a Google 403 explains that the API may not be enabled', async () => {
   const transport = scripted(fail(403, { error: { message: 'Forbidden' } }));
   const provider = new GoogleTranslateProvider({ transport, apiKey: 'AIza' });

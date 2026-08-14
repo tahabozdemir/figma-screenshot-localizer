@@ -1,10 +1,12 @@
 /**
- * The CORS escape hatch.
+ * The second network route.
  *
- * The UI is a normal browser iframe, so it is bound by CORS, and some providers
- * (DeepL) deliberately send no CORS headers. The sandbox has its own `fetch`
- * that Figma proxies and that CORS does not apply to, so those requests are
- * re-issued here over a message round-trip.
+ * The UI is a normal browser iframe, so it is bound by CORS; requests it fails
+ * are re-issued here over a message round-trip. Note this is NOT a CORS escape
+ * hatch: the sandbox `fetch` is proxied through the same null-origin browser
+ * machinery, so it only helps with transient transport failures. An API that
+ * sends no CORS headers (DeepL) fails on this route too — see "DeepL and CORS"
+ * in docs/providers.md.
  *
  * It is a dumb pipe on purpose: it does not know what a provider is, and it can
  * only reach the domains allow-listed in manifest.json either way.

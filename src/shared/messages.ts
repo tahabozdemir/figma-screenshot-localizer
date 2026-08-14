@@ -9,7 +9,13 @@
  * mutate a document off an unvalidated payload.
  */
 
-import { normalizeManual, normalizeOptions, normalizeSecrets, normalizeSettings } from './defaults';
+import {
+  normalizeFolders,
+  normalizeManual,
+  normalizeOptions,
+  normalizeSecrets,
+  normalizeSettings,
+} from './defaults';
 import type {
   FrameSummary,
   GenerateConfig,
@@ -171,7 +177,7 @@ function language(value: unknown): LanguageDef | null {
     tag: item.tag,
     name: text(item.name) || item.code,
     rtl: item.rtl === true,
-    script: (['latin', 'cyrillic', 'cjk', 'arabic'].indexOf(String(item.script)) >= 0
+    script: (['latin', 'cyrillic', 'cjk', 'arabic', 'thai'].indexOf(String(item.script)) >= 0
       ? item.script
       : 'latin') as LanguageDef['script'],
   };
@@ -202,6 +208,7 @@ function generateConfig(value: unknown): GenerateConfig | null {
     targets,
     mode: text(item.mode) as TranslationMode,
     options: normalizeOptions(item.options),
+    exportFolders: normalizeFolders(item.exportFolders),
     doNotTranslate: stringList(item.doNotTranslate),
     cacheKey: typeof item.cacheKey === 'string' && item.cacheKey ? item.cacheKey : null,
     capabilities: { shorten: caps.shorten === true, budgets: caps.budgets === true },

@@ -151,6 +151,7 @@ function config(over = {}) {
     sourceLanguage: 'EN',
     targets: ['DE'],
     mode: 'openai',
+    exportFolders: 'none',
     doNotTranslate: [],
     cacheKey: 'openai/gpt-4o-mini',
     capabilities: { shorten: false, budgets: false },
@@ -221,16 +222,27 @@ test('a frame is cloned per language, renamed, and its text replaced', async () 
   assert.equal(source.name, '01_Hero_EN');
 });
 
-test('language columns do not land on top of what is already on the page', async () => {
+test('languages stack below the sources and wrap into a new column after five', async () => {
   const source = frameNode('Hero', [textNode('t', 'One')]);
   const doc = fakeDoc([source]);
 
-  const { outcome } = await run(doc, { targets: ['DE', 'FR'] });
+  const { outcome } = await run(doc, { targets: ['DE', 'FR', 'ES', 'IT', 'PT', 'NL'] });
 
   assert.equal(outcome.status, 'done');
   const created = doc.page.filter((n) => n !== source);
-  assert.ok(created[0].x > 0, 'the first column must clear the existing content');
-  assert.ok(created[1].x > created[0].x, 'columns must not overlap');
+  assert.equal(created.length, 6);
+  const src = source.absoluteBoundingBox;
+  assert.equal(created[0].x, src.x, 'the grid is aligned with the sources');
+  assert.ok(
+    created[0].y > src.y + src.height,
+    'the first language must clear the existing content'
+  );
+  for (let i = 1; i < 5; i++) {
+    assert.equal(created[i].x, created[0].x, 'the first five languages share a column');
+    assert.ok(created[i].y > created[i - 1].y, 'languages must stack downward without overlap');
+  }
+  assert.ok(created[5].x > created[0].x, 'the sixth language starts a new column');
+  assert.equal(created[5].y, created[0].y, 'the new column starts back at the top');
 });
 
 test('an identical string on two layers is sent once and written twice', async () => {
@@ -362,6 +374,33 @@ test('turning off "keep originals" only renames the source', async () => {
   assert.equal(source.name, 'Hero_EN');
   assert.equal(source.removed, false);
   assert.equal(source.children[0].characters, 'One');
+});
+
+test('export folders name every clone into its store locale', async () => {
+  const source = frameNode('01_Hero_EN', [textNode('t', 'One')]);
+  const doc = fakeDoc([source]);
+
+  await run(doc, {
+    targets: ['AR', 'ZH-CN'],
+    exportFolders: 'appStore',
+    options: { keepOriginals: false },
+  });
+
+  const names = doc.page.map((n) => n.name).sort();
+  // The source is filed under its own locale too, so the export is complete.
+  assert.deepEqual(names, ['ar-SA/01_Hero', 'en-US/01_Hero', 'zh-Hans/01_Hero']);
+  assert.equal(source.name, 'en-US/01_Hero');
+});
+
+test('switching store re-folders an earlier run instead of nesting', async () => {
+  // A frame the App Store run produced, fed back in as the source.
+  const source = frameNode('ar-SA/01_Hero', [textNode('t', 'One')]);
+  const doc = fakeDoc([source]);
+
+  await run(doc, { targets: ['AR'], exportFolders: 'play' });
+
+  const clone = doc.page.filter((n) => n !== source)[0];
+  assert.equal(clone.name, 'ar/01_Hero');
 });
 
 test('re-running with "update existing" replaces rather than piles up', async () => {

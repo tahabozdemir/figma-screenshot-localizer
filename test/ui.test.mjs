@@ -279,6 +279,30 @@ test('every option checkbox in the template is bound to a setting', () => {
   assert.match(document.getElementById('glossary-state').textContent, /1 term/);
 });
 
+test('the export-folder picker shows the locales the chosen store would use', () => {
+  reset();
+  lib.state.settings.targets = ['AR', 'ZH-CN'];
+  lib.state.settings.exportFolders = 'appStore';
+
+  lib.renderOptions();
+
+  const select = document.getElementById('export-folders');
+  assert.equal(select.value, 'appStore');
+  assert.equal(select.options.length, 4, 'off, App Store, Play, plain tag');
+  const note = document.getElementById('export-folders-note').textContent;
+  assert.match(note, /ar-SA\/ zh-Hans\//);
+  // Folders carry the language already, so the suffix switch is off the table.
+  assert.equal(document.getElementById('opt-suffix').disabled, true);
+
+  lib.state.settings.exportFolders = 'play';
+  lib.renderOptions();
+  assert.match(document.getElementById('export-folders-note').textContent, /ar\/ zh-CN\//);
+
+  lib.state.settings.exportFolders = 'none';
+  lib.renderOptions();
+  assert.equal(document.getElementById('opt-suffix').disabled, false);
+});
+
 test('switching views leaves exactly one active, and the footer follows', () => {
   reset();
   const active = () =>
